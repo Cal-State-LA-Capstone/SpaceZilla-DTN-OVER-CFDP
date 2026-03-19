@@ -8,12 +8,11 @@ from ui_versioninfo import Ui_VERSIONINFO
 
 
 class MainWindow(QMainWindow):
-
-    #Terminal Window Help Function
+    # Terminal Window Help Function
     def open_terminal(self):
         subprocess.Popen("x-terminal-emulator")
 
-    #Dark Mode Function
+    # Dark Mode Function
     def enable_dark_mode(self):
         app = QApplication.instance()
         app.setStyle("Fusion")
@@ -37,20 +36,20 @@ class MainWindow(QMainWindow):
 
         self.dark_mode = True
 
-    #Light Mode Function
+    # Light Mode Function
     def enable_light_mode(self):
         app = QApplication.instance()
         app.setPalette(app.style().standardPalette())
         self.dark_mode = False
 
-    #Light/Dark Mode Toggle Help Function
+    # Light/Dark Mode Toggle Help Function
     def toggle_mode(self):
         if self.dark_mode:
             self.enable_light_mode()
         else:
             self.enable_dark_mode()
 
-    #open .txt file for version and hotkeys help function
+    # open .txt file for version and hotkeys help function
     def versionHotkeys(self):
         self.version_window = VersionInfoWindow()
         self.version_window.show()
@@ -61,7 +60,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MAIN()
         self.ui.setupUi(self)
 
-        #Default: Light Mode
+        # Default: Light Mode
         self.dark_mode = False
 
         # TOOLBAR
@@ -90,26 +89,28 @@ class MainWindow(QMainWindow):
         settingsMenu.addAction(action_themes)
         settingsMenu.addAction(action_lightDarkMode)
 
-        #Connect light/dark mode to mode button
+        # Connect light/dark mode to mode button
         action_lightDarkMode.triggered.connect(self.toggle_mode)
 
-        #Open a .txt file containing version information
+        # Open a .txt file containing version information
         action_versionHotkeys.triggered.connect(self.versionHotkeys)
 
         # Attach to QToolButton from UI file
         self.ui.SETTINGS.setMenu(settingsMenu)
         self.ui.SETTINGS.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
 
-        #TERMINAL
+        # TERMINAL
         self.ui.TERMINAL.clicked.connect(self.open_terminal)
 
-#Popup Windows
+
+# Popup Windows
 class VersionInfoWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.ui = Ui_VERSIONINFO()
         self.ui.setupUi(self)
+
 
 if __name__ == "__main__":
     app = QApplication([])
