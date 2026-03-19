@@ -1,0 +1,213 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'SpaceZilla_ver0.ui'
+##
+## Created by: Qt User Interface Compiler version 6.10.2
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QComboBox,
+    QMenuBar,
+    QPushButton,
+    QScrollArea,
+    QScrollBar,
+    QStatusBar,
+    QToolButton,
+    QWidget,
+)
+
+
+class Ui_MAIN(object):
+    def setupUi(self, MAIN):
+        if not MAIN.objectName():
+            MAIN.setObjectName("MAIN")
+        MAIN.resize(488, 555)
+        self.centralwidget = QWidget(MAIN)
+        self.centralwidget.setObjectName("centralwidget")
+        self.SOURCE_DIRECT = QScrollArea(self.centralwidget)
+        self.SOURCE_DIRECT.setObjectName("SOURCE_DIRECT")
+        self.SOURCE_DIRECT.setGeometry(QRect(20, 80, 221, 201))
+        self.SOURCE_DIRECT.setWidgetResizable(True)
+        self.scrollAreaWidgetContents = QWidget()
+        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 219, 199))
+        self.verticalScrollBar = QScrollBar(self.scrollAreaWidgetContents)
+        self.verticalScrollBar.setObjectName("verticalScrollBar")
+        self.verticalScrollBar.setGeometry(QRect(200, 10, 16, 181))
+        self.verticalScrollBar.setOrientation(Qt.Orientation.Vertical)
+        self.FILE_FILTER = QComboBox(self.scrollAreaWidgetContents)
+        self.FILE_FILTER.addItem("")
+        self.FILE_FILTER.addItem("")
+        self.FILE_FILTER.addItem("")
+        self.FILE_FILTER.setObjectName("FILE_FILTER")
+        self.FILE_FILTER.setGeometry(QRect(10, 160, 81, 26))
+        self.SOURCE_DIRECT.setWidget(self.scrollAreaWidgetContents)
+        self.QUEUE = QScrollArea(self.centralwidget)
+        self.QUEUE.setObjectName("QUEUE")
+        self.QUEUE.setGeometry(QRect(20, 330, 451, 131))
+        self.QUEUE.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_3 = QWidget()
+        self.scrollAreaWidgetContents_3.setObjectName("scrollAreaWidgetContents_3")
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 449, 129))
+        self.STATUS = QToolButton(self.scrollAreaWidgetContents_3)
+        self.STATUS.setObjectName("STATUS")
+        self.STATUS.setGeometry(QRect(150, 20, 91, 25))
+        self.verticalScrollBar_3 = QScrollBar(self.scrollAreaWidgetContents_3)
+        self.verticalScrollBar_3.setObjectName("verticalScrollBar_3")
+        self.verticalScrollBar_3.setGeometry(QRect(430, 10, 16, 111))
+        self.verticalScrollBar_3.setOrientation(Qt.Orientation.Vertical)
+        self.pushButton = QPushButton(self.scrollAreaWidgetContents_3)
+        self.pushButton.setObjectName("pushButton")
+        self.pushButton.setGeometry(QRect(270, 20, 31, 26))
+        icon = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaPlaybackPause))
+        self.pushButton.setIcon(icon)
+        self.pushButton_9 = QPushButton(self.scrollAreaWidgetContents_3)
+        self.pushButton_9.setObjectName("pushButton_9")
+        self.pushButton_9.setGeometry(QRect(310, 20, 31, 26))
+        icon1 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaPlaybackStop))
+        self.pushButton_9.setIcon(icon1)
+        self.pushButton_10 = QPushButton(self.scrollAreaWidgetContents_3)
+        self.pushButton_10.setObjectName("pushButton_10")
+        self.pushButton_10.setGeometry(QRect(350, 20, 31, 26))
+        icon2 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaPlaybackStart))
+        self.pushButton_10.setIcon(icon2)
+        self.STATUS_2 = QToolButton(self.scrollAreaWidgetContents_3)
+        self.STATUS_2.setObjectName("STATUS_2")
+        self.STATUS_2.setGeometry(QRect(150, 50, 91, 25))
+        self.pushButton_11 = QPushButton(self.scrollAreaWidgetContents_3)
+        self.pushButton_11.setObjectName("pushButton_11")
+        self.pushButton_11.setGeometry(QRect(350, 50, 31, 26))
+        self.pushButton_11.setIcon(icon2)
+        self.pushButton_12 = QPushButton(self.scrollAreaWidgetContents_3)
+        self.pushButton_12.setObjectName("pushButton_12")
+        self.pushButton_12.setGeometry(QRect(310, 50, 31, 26))
+        self.pushButton_12.setIcon(icon1)
+        self.pushButton_13 = QPushButton(self.scrollAreaWidgetContents_3)
+        self.pushButton_13.setObjectName("pushButton_13")
+        self.pushButton_13.setGeometry(QRect(270, 50, 31, 26))
+        self.pushButton_13.setIcon(icon)
+        self.FILE_FILTER_3 = QComboBox(self.scrollAreaWidgetContents_3)
+        self.FILE_FILTER_3.addItem("")
+        self.FILE_FILTER_3.addItem("")
+        self.FILE_FILTER_3.addItem("")
+        self.FILE_FILTER_3.setObjectName("FILE_FILTER_3")
+        self.FILE_FILTER_3.setGeometry(QRect(10, 90, 81, 26))
+        self.QUEUE.setWidget(self.scrollAreaWidgetContents_3)
+        self.DESTIN_DIRECT = QScrollArea(self.centralwidget)
+        self.DESTIN_DIRECT.setObjectName("DESTIN_DIRECT")
+        self.DESTIN_DIRECT.setGeometry(QRect(250, 80, 221, 201))
+        self.DESTIN_DIRECT.setWidgetResizable(True)
+        self.scrollAreaWidgetContents_2 = QWidget()
+        self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 219, 199))
+        self.verticalScrollBar_2 = QScrollBar(self.scrollAreaWidgetContents_2)
+        self.verticalScrollBar_2.setObjectName("verticalScrollBar_2")
+        self.verticalScrollBar_2.setGeometry(QRect(200, 10, 16, 181))
+        self.verticalScrollBar_2.setOrientation(Qt.Orientation.Vertical)
+        self.FILE_FILTER_2 = QComboBox(self.scrollAreaWidgetContents_2)
+        self.FILE_FILTER_2.addItem("")
+        self.FILE_FILTER_2.addItem("")
+        self.FILE_FILTER_2.addItem("")
+        self.FILE_FILTER_2.setObjectName("FILE_FILTER_2")
+        self.FILE_FILTER_2.setGeometry(QRect(10, 160, 81, 26))
+        self.DESTIN_DIRECT.setWidget(self.scrollAreaWidgetContents_2)
+        self.pushButton_2 = QPushButton(self.centralwidget)
+        self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.setGeometry(QRect(20, 50, 94, 26))
+        self.pushButton_3 = QPushButton(self.centralwidget)
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.setGeometry(QRect(250, 50, 111, 26))
+        self.pushButton_4 = QPushButton(self.centralwidget)
+        self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.setGeometry(QRect(370, 50, 101, 26))
+        self.pushButton_5 = QPushButton(self.centralwidget)
+        self.pushButton_5.setObjectName("pushButton_5")
+        self.pushButton_5.setGeometry(QRect(150, 50, 91, 26))
+        self.TOOLBAR = QToolButton(self.centralwidget)
+        self.TOOLBAR.setObjectName("TOOLBAR")
+        self.TOOLBAR.setGeometry(QRect(370, 10, 101, 25))
+        self.TOOLBAR.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.TOOLBAR.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.TOOLBAR.setAcceptDrops(False)
+        self.TOOLBAR.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.TOOLBAR.setArrowType(Qt.ArrowType.NoArrow)
+        self.SETTINGS = QToolButton(self.centralwidget)
+        self.SETTINGS.setObjectName("SETTINGS")
+        self.SETTINGS.setGeometry(QRect(25, 470, 91, 25))
+        self.SETTINGS.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.TERMINAL = QToolButton(self.centralwidget)
+        self.TERMINAL.setObjectName("TERMINAL")
+        self.TERMINAL.setGeometry(QRect(370, 470, 101, 25))
+        self.pushButton_14 = QPushButton(self.centralwidget)
+        self.pushButton_14.setObjectName("pushButton_14")
+        self.pushButton_14.setGeometry(QRect(20, 300, 94, 26))
+        MAIN.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(MAIN)
+        self.menubar.setObjectName("menubar")
+        self.menubar.setGeometry(QRect(0, 0, 488, 23))
+        MAIN.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(MAIN)
+        self.statusbar.setObjectName("statusbar")
+        MAIN.setStatusBar(self.statusbar)
+
+        self.retranslateUi(MAIN)
+
+        QMetaObject.connectSlotsByName(MAIN)
+
+    # setupUi
+
+    def retranslateUi(self, MAIN):
+        MAIN.setWindowTitle(QCoreApplication.translate("MAIN", "MainWindow", None))
+        self.FILE_FILTER.setItemText(0, QCoreApplication.translate("MAIN", "All", None))
+        self.FILE_FILTER.setItemText(1, QCoreApplication.translate("MAIN", ".rc", None))
+        self.FILE_FILTER.setItemText(
+            2, QCoreApplication.translate("MAIN", ".txt", None)
+        )
+
+        self.STATUS.setText(QCoreApplication.translate("MAIN", "STATUS", None))
+        self.pushButton.setText("")
+        self.pushButton_9.setText("")
+        self.pushButton_10.setText("")
+        self.STATUS_2.setText(QCoreApplication.translate("MAIN", "STATUS", None))
+        self.pushButton_11.setText("")
+        self.pushButton_12.setText("")
+        self.pushButton_13.setText("")
+        self.FILE_FILTER_3.setItemText(
+            0, QCoreApplication.translate("MAIN", "All", None)
+        )
+        self.FILE_FILTER_3.setItemText(
+            1, QCoreApplication.translate("MAIN", ".rc", None)
+        )
+        self.FILE_FILTER_3.setItemText(
+            2, QCoreApplication.translate("MAIN", ".txt", None)
+        )
+
+        self.FILE_FILTER_2.setItemText(
+            0, QCoreApplication.translate("MAIN", "All", None)
+        )
+        self.FILE_FILTER_2.setItemText(
+            1, QCoreApplication.translate("MAIN", ".rc", None)
+        )
+        self.FILE_FILTER_2.setItemText(
+            2, QCoreApplication.translate("MAIN", ".txt", None)
+        )
+
+        self.pushButton_2.setText(QCoreApplication.translate("MAIN", "SOURCE", None))
+        self.pushButton_3.setText(
+            QCoreApplication.translate("MAIN", "DESTINATION", None)
+        )
+        self.pushButton_4.setText(
+            QCoreApplication.translate("MAIN", "FILE REQUEST", None)
+        )
+        self.pushButton_5.setText(QCoreApplication.translate("MAIN", "FILE SEND", None))
+        self.TOOLBAR.setText(QCoreApplication.translate("MAIN", "TOOLBAR", None))
+        self.SETTINGS.setText(QCoreApplication.translate("MAIN", "SETTINGS", None))
+        self.TERMINAL.setText(QCoreApplication.translate("MAIN", "TERMINAL", None))
+        self.pushButton_14.setText(QCoreApplication.translate("MAIN", "QUEUE", None))
+
+    # retranslateUi
