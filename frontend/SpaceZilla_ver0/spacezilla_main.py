@@ -3,7 +3,7 @@ import subprocess
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QColor, QPalette
 from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QToolButton
-from ui_spacezilla import Ui_MAIN
+from ui_spacezilla import Ui_mainWindow
 from ui_versioninfo import Ui_VERSIONINFO
 
 
@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.ui = Ui_MAIN()
+        self.ui = Ui_mainWindow()
         self.ui.setupUi(self)
 
         # Default: Light Mode
@@ -75,8 +75,8 @@ class MainWindow(QMainWindow):
         toolbarMenu.addAction(action_contactList)
 
         # Attach to QToolButton from UI file
-        self.ui.TOOLBAR.setMenu(toolbarMenu)
-        self.ui.TOOLBAR.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.ui.btnToolbar.setMenu(toolbarMenu)
+        self.ui.btnToolbar.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
 
         # SETTINGS
         settingsMenu = QMenu(self)
@@ -96,11 +96,11 @@ class MainWindow(QMainWindow):
         action_versionHotkeys.triggered.connect(self.versionHotkeys)
 
         # Attach to QToolButton from UI file
-        self.ui.SETTINGS.setMenu(settingsMenu)
-        self.ui.SETTINGS.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.ui.btnSettings.setMenu(settingsMenu)
+        self.ui.btnSettings.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
 
         # TERMINAL
-        self.ui.TERMINAL.clicked.connect(self.open_terminal)
+        self.ui.btnTerminal.clicked.connect(self.open_terminal)
 
 
 # Popup Windows
