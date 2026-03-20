@@ -97,7 +97,9 @@ class MainWindow(QMainWindow):
 
         # Attach to QToolButton from UI file
         self.ui.btnSettings.setMenu(settingsMenu)
-        self.ui.btnSettings.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        self.ui.btnSettings.setPopupMode(
+            QToolButton.ToolButtonPopupMode.MenuButtonPopup
+        )
 
         # TERMINAL
         self.ui.btnTerminal.clicked.connect(self.open_terminal)
