@@ -1,6 +1,7 @@
-import pyion
-import threading
 import os
+import threading
+
+import pyion
 
 #used to keep track of files in the queue
 counter = 0
@@ -83,8 +84,8 @@ def getQueue():
     with queueLock:
         return [item.copy() for item in queue]
 
-#uses background thread to send the files. 
-#Stores 'onChange' so we can get status updates. 
+#uses background thread to send the files.
+#Stores 'onChange' so we can get status updates.
 #also checks for other threads.
 def sendFiles(onChange):
     global sendThread, statusChange
@@ -109,7 +110,7 @@ def resume():
     if entity:
         return entity.cfdp_resume()
     return 0
-#returns the current transfer status as a string. 
+#returns the current transfer status as a string.
 #It looks for the active file to get the file status
 def statusIndicator():
     with activeLock:
@@ -159,7 +160,7 @@ def makeEvent(queueId):
 
 #this is used for the send thread. It loops through queue looking for the next
 #file added to the queue. If it finds one it will change the status to 'Running'
-#and register the event handler and it will call 'cfdp_send'. 
+#and register the event handler and it will call 'cfdp_send'.
 #This will keep going until the queue is empty.
 def processQueue():
     global activeId
@@ -183,9 +184,9 @@ def processQueue():
         updateStatus(queueId, "Running")
 
         try:
-            entity.register_event_handler('CFDP_ALL_EVENTS', 
+            entity.register_event_handler('CFDP_ALL_EVENTS',
                                           makeEvent(queueId))
-            entity.cfdp_send(source_file=path, 
+            entity.cfdp_send(source_file=path,
                              dest_file=f'/SZ_received_files/{filename}')
             success = entity.wait_for_transaction_end()
 
