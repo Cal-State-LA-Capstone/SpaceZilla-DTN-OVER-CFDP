@@ -29,8 +29,8 @@ class MainWindow:
         self.apply_theme_icons()
         
         # send/request confirmation window
-        self.file_send = self.window.findChild(QPushButton, "file_send")
-        self.file_request = self.window.findChild(QPushButton, "file_request")
+        self.file_send = self.window.findChild(QPushButton, "btnFileSend")
+        self.file_request = self.window.findChild(QPushButton, "btnFileRequest")
         
         self.file_send.clicked.connect(self.open_send_confirmation)
         self.file_request.clicked.connect(self.open_request_confirmation)
@@ -39,9 +39,9 @@ class MainWindow:
         self.file_send.clicked.connect(self.handle_file_send)
         
         # Find widgets from UI
-        self.TOOLBAR = self.window.findChild(QToolButton, "TOOLBAR")
-        self.SETTINGS = self.window.findChild(QToolButton, "SETTINGS")
-        self.TERMINAL = self.window.findChild(QToolButton, "TERMINAL")
+        self.TOOLBAR = self.window.findChild(QToolButton, "toolBtnToolbar")
+        self.SETTINGS = self.window.findChild(QToolButton, "toolBtnSettings")
+        self.TERMINAL = self.window.findChild(QToolButton, "toolBtnTerminal")
 
         # TOOLBAR MENU
         toolbarMenu = QMenu(self.window)
@@ -84,7 +84,7 @@ class MainWindow:
         self.TERMINAL.clicked.connect(self.open_terminal)
 
         # QUEUE SETUP
-        self.queue_area = self.window.findChild(QWidget, "scrollAreaWidgetContents_3")
+        self.queue_area = self.window.findChild(QWidget, "scrollTransferQueueContents")
         for child in self.queue_area.findChildren(QWidget):
             child.setParent(None)  # removes template queue layout
         self.queue_layout = QVBoxLayout(self.queue_area)
@@ -102,9 +102,9 @@ class MainWindow:
     def apply_theme_icons(self):
     
         icons = {
-            "resume": "media-playback-start",
-            "suspend": "media-playback-pause",
-            "cancel": "media-playback-stop"
+            "btnResumeTransfer": "media-playback-start",
+            "btnSuspendTransfer": "media-playback-pause",
+            "btnCancelTransfer": "media-playback-stop"
         }
         
         for name, icon_name in icons.items():
