@@ -215,5 +215,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Runtime Logger
+logs/
+
 # Claude
+.claude/
 CLAUDE.md
