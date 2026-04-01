@@ -40,7 +40,8 @@ class FilePickerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Select Files")
-        #will hold the files that the user selects. source() will use this to read the files
+        #will hold the files that the user selects. 
+        #source() will use this to read the files
         self.selected_files = []
 
         self.ui = load_ui("fileTest.ui")
@@ -55,7 +56,8 @@ class FilePickerDialog(QDialog):
         self.ui.fileTree.setRootIndex(self.model.index("/"))
         #allows to ctrl + click to select multiple files
         self.ui.fileTree.setSelectionMode(QTreeView.ExtendedSelection)
-        #this allows us to hide file info so we can only see the file name. can delete this if we want to
+        #this allows us to hide file info so we can only see the file name. 
+        #can delete this if we want to
         self.ui.fileTree.setColumnHidden(1, True)
         self.ui.fileTree.setColumnHidden(2, True)
         self.ui.fileTree.setColumnHidden(3, True)
@@ -84,11 +86,13 @@ class FilePickerDialog(QDialog):
                 continue
             #gets the full path for the index from the model
             path = self.model.filePath(index)
-            #checks if path is a file and isnt in seen set (no dup).It will add the path to results list and in seen set
+            #checks if path is a file and isnt in seen set (no dup).
+            #It will add the path to results list and in seen set
             if QFileInfo(path).isFile() and path not in seen:
                 paths.append(path)
                 seen.add(path)
-        #stores the list of selected paths so source() can read it after the window closes
+        #stores the list of selected paths 
+        #so source() can read it after the window closes
         self.selected_files = paths
         self.accept()
 
@@ -385,17 +389,6 @@ class MainWindow:
                 item["status_button"].setText(status_text.get(status,status))
                 break
 
-    # Handles QUEUE
-    #def handle_file_send(self):
-     #   self.confirm_window = load_ui("Confirmation_ver0.ui")
-     #    self.confirm_window.setWindowTitle("Confirm Send")
-
-      #  result = self.confirm_window.exec() # blocks action until user clicks OK or Cancel
-
-       # if result == QDialog.Accepted:
-            #self.add_to_queue()
-        #else:
-         #   print("User cancelled file send")
 
 if __name__ == "__main__":
     app = QApplication([])
