@@ -40,7 +40,7 @@ class FilePickerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Select Files")
-        #will hold the files that the user selects. 
+        #will hold the files that the user selects.
         #source() will use this to read the files
         self.selected_files = []
 
@@ -56,7 +56,7 @@ class FilePickerDialog(QDialog):
         self.ui.fileTree.setRootIndex(self.model.index("/"))
         #allows to ctrl + click to select multiple files
         self.ui.fileTree.setSelectionMode(QTreeView.ExtendedSelection)
-        #this allows us to hide file info so we can only see the file name. 
+        #this allows us to hide file info so we can only see the file name.
         #can delete this if we want to
         self.ui.fileTree.setColumnHidden(1, True)
         self.ui.fileTree.setColumnHidden(2, True)
@@ -91,7 +91,7 @@ class FilePickerDialog(QDialog):
             if QFileInfo(path).isFile() and path not in seen:
                 paths.append(path)
                 seen.add(path)
-        #stores the list of selected paths 
+        #stores the list of selected paths
         #so source() can read it after the window closes
         self.selected_files = paths
         self.accept()
