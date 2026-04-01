@@ -284,7 +284,7 @@ class MainWindow:
         #It registers the file in the queue and returns a list of ids
         ids = fileQueue.queueFile([file_path])
         #gets the first id from the list
-        queue_id = ids [0]
+        queue_id = ids[0]
         #gets the name form the file path
         file_name = QFileInfo(file_path).fileName()
         #row for the queue
