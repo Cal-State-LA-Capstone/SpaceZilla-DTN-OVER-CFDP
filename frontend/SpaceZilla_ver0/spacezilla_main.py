@@ -1,11 +1,23 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QToolButton,QPushButton
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel,QLayout,QHBoxLayout,QDialog
-from PySide6.QtWidgets import QTreeView, QDialogButtonBox, QFileSystemModel
-from PySide6.QtGui import QAction, QPalette, QColor
-from PySide6.QtCore import Qt, QFile, QObject, Signal, QDir, QFileInfo
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtGui import QIcon
 import subprocess
+
+from PySide6.QtCore import QDir, QFile, QFileInfo, QObject, Qt, Signal
+from PySide6.QtGui import QAction, QColor, QIcon, QPalette
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QFileSystemModel,
+    QHBoxLayout,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QToolButton,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
+
 import fileQueue
 
 loader = QUiLoader()
@@ -53,12 +65,12 @@ class FilePickerDialog(QDialog):
         self.btn_box.accepted.connect(self.user_selected_files)
         #triggers when we click cancel
         self.btn_box.rejected.connect(self.reject)
- 
+
         #vetical layout with the buttons and files
         layout = QVBoxLayout(self)
         layout.addWidget(self.ui)
         layout.addWidget(self.btn_box)
- 
+
     def user_selected_files(self):
         #collects all the files we selected earlier
         indexes = self.ui.fileTree.selectionModel().selectedIndexes()
@@ -88,21 +100,21 @@ class MainWindow:
 
         # Default: Light Mode
         self.dark_mode = False
-        
+
         # Apply icons to buttons
         self.apply_theme_icons()
 
-#Taking this part of the queue out for now        
+#Taking this part of the queue out for now
         # send/request confirmation window
         #self.file_send = self.window.findChild(QPushButton, "file_send")
         #self.file_request = self.window.findChild(QPushButton, "file_request")
-        
+
         #(del)self.file_send.clicked.connect(self.open_send_confirmation)
         #self.file_request.clicked.connect(self.open_request_confirmation)
 
         # QUEUE
         #self.file_send.clicked.connect(self.handle_file_send)
-        
+
 
         self.source_btn = self.window.findChild(QPushButton, "pushButton_2")
         self.file_send = self.window.findChild(QPushButton, "file_send")
@@ -126,7 +138,7 @@ class MainWindow:
         toolbarMenu.addAction(action_fileLog)
         toolbarMenu.addAction(action_recentlySent)
         toolbarMenu.addAction(action_contactList)
-        
+
         action_fileLog.triggered.connect(self.fileLog)
         action_recentlySent.triggered.connect(self.recentlySent)
         action_contactList.triggered.connect(self.contactList)
@@ -173,16 +185,16 @@ class MainWindow:
     # Terminal
     def open_terminal(self):
         subprocess.Popen("x-terminal-emulator")
-       
+
     # apply icons to suspend, cancel, resume
     def apply_theme_icons(self):
-    
+
         icons = {
             "resume": "media-playback-start",
             "suspend": "media-playback-pause",
             "cancel": "media-playback-stop"
         }
-        
+
         for name, icon_name in icons.items():
             btn = self.window.findChild(QPushButton, name)
             if btn:
@@ -198,7 +210,7 @@ class MainWindow:
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         self.confirm_window.setWindowTitle("Confirm Request")
         self.confirm_window.show()
-    
+
     #Settings
     # Dark Mode
     def enable_dark_mode(self):
@@ -246,7 +258,7 @@ class MainWindow:
         self.fileLog_window = load_ui("File_Log_ver0.ui")
         self.fileLog_window.setWindowTitle("File Log")
         self.fileLog_window.show()
-        
+
     #Open Contact List
     def contactList(self):
         self.contactList_window = load_ui("Contact_List_ver0.ui")
@@ -264,7 +276,7 @@ class MainWindow:
         #fake_path = f"/app/SZ_received_files/{file_name}"
         #fake_path = "/app/TestFile.txt"
 
-        #calls queueFile from fileQueue.py and passes the path as a list. 
+        #calls queueFile from fileQueue.py and passes the path as a list.
         #It registers the file in the queue and returns a list of ids
         ids = fileQueue.queueFile([file_path])
         #gets the first id from the list
@@ -283,16 +295,16 @@ class MainWindow:
         suspend_btn = QPushButton()
         cancel_btn = QPushButton()
         resume_btn = QPushButton()
-        
+
 
         suspend_btn.setFixedSize(30, 26)
         cancel_btn.setFixedSize(30, 26)
         resume_btn.setFixedSize(30, 26)
-        
+
         suspend_btn.setIcon(QIcon.fromTheme("media-playback-pause"))
         cancel_btn.setIcon(QIcon.fromTheme("media-playback-stop"))
         resume_btn.setIcon(QIcon.fromTheme("media-playback-start"))
-        
+
         #connects buttons to functions and passes queue_id and status_button as args
         suspend_btn.clicked.connect(lambda: self.on_suspend(queue_id,status_button))
         cancel_btn.clicked.connect(lambda: self.on_cancel(queue_id,status_button))
@@ -303,9 +315,9 @@ class MainWindow:
         row_layout.addWidget(suspend_btn)
         row_layout.addWidget(cancel_btn)
         row_layout.addWidget(resume_btn)
-        
+
         self.queue_layout.addWidget(row_widget)
-        #what we will store in a list 
+        #what we will store in a list
         #status_button will be used by handle_status_change
         self.queue_items.append({
             "id": queue_id,
@@ -321,7 +333,7 @@ class MainWindow:
 
         print("queued items: ", self.queue_items)
         print("File Queue queue: " , fileQueue.queue)
- 
+
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         self.confirm_window.setWindowTitle("Confirm")
         #confirmation popup
@@ -384,11 +396,6 @@ class MainWindow:
             #self.add_to_queue()
         #else:
          #   print("User cancelled file send")
-
-    def open_request_confirmation(self):
-        self.confirm_window = load_ui("Confirmation_ver0.ui")
-        self.confirm_window.setWindowTitle("Confirm Request")
-        self.confirm_window.show()
 
 if __name__ == "__main__":
     app = QApplication([])
