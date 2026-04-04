@@ -1,351 +1,376 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>winMain</class>
- <widget class="QMainWindow" name="winMain">
+ <class>MAIN</class>
+ <widget class="QMainWindow" name="MAIN">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>488</width>
-    <height>555</height>
+    <width>767</width>
+    <height>636</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QScrollArea" name="scrollSourceDirectory">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>80</y>
-      <width>221</width>
-      <height>201</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollSourceDirectoryContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>219</width>
-       <height>199</height>
-      </rect>
-     </property>
-     <widget class="QScrollBar" name="scrollBarSourceDirectory">
-      <property name="geometry">
-       <rect>
-        <x>200</x>
-        <y>10</y>
-        <width>16</width>
-        <height>181</height>
-       </rect>
-      </property>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QWidget" name="widget_7" native="true">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QWidget" name="widget_6" native="true">
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="1">
+           <widget class="QToolButton" name="TOOLBAR">
+            <property name="focusPolicy">
+             <enum>Qt::FocusPolicy::StrongFocus</enum>
+            </property>
+            <property name="contextMenuPolicy">
+             <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+            </property>
+            <property name="acceptDrops">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>TOOLBAR</string>
+            </property>
+            <property name="popupMode">
+             <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::ArrowType::NoArrow</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="widget_2" native="true">
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="2" column="1" colspan="2">
+           <widget class="QScrollArea" name="SOURCE_DIRECT">
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="scrollAreaWidgetContents">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>439</width>
+               <height>198</height>
+              </rect>
+             </property>
+            </widget>
+           </widget>
+          </item>
+          <item row="1" column="3" rowspan="3">
+           <widget class="QWidget" name="widget" native="true">
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="7" column="1" colspan="2">
+              <widget class="QScrollArea" name="CONTACT_LIST">
+               <property name="widgetResizable">
+                <bool>true</bool>
+               </property>
+               <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>0</y>
+                  <width>246</width>
+                  <height>68</height>
+                 </rect>
+                </property>
+               </widget>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>CONTACTS</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="1">
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item row="8" column="2">
+              <widget class="QLineEdit" name="contact_filter">
+               <property name="layoutDirection">
+                <enum>Qt::LayoutDirection::LeftToRight</enum>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="echoMode">
+                <enum>QLineEdit::EchoMode::Normal</enum>
+               </property>
+               <property name="placeholderText">
+                <string>Search Contact...</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>FILE SELECTED</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>DESTINATION</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1" colspan="2">
+              <widget class="QLineEdit" name="file_selected_display">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1" colspan="2">
+              <widget class="QLineEdit" name="destination_display">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="3" column="2">
+           <widget class="QLineEdit" name="file_filter">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="placeholderText">
+             <string>Search File...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>SOURCE</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="file_send">
+         <property name="text">
+          <string>SEND</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
-     <widget class="QLineEdit" name="txtSourceFileFilter">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>160</y>
-        <width>113</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Search File...</string>
-      </property>
+    </item>
+    <item>
+     <widget class="QWidget" name="widget_4" native="true">
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="queue_filter">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="placeholderText">
+          <string>Search File...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <spacer name="horizontalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QScrollArea" name="QUEUE">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents_3">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>729</width>
+            <height>68</height>
+           </rect>
+          </property>
+          <widget class="QToolButton" name="STATUS">
+           <property name="geometry">
+            <rect>
+             <x>150</x>
+             <y>20</y>
+             <width>91</width>
+             <height>25</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>STATUS</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="suspend">
+           <property name="geometry">
+            <rect>
+             <x>270</x>
+             <y>20</y>
+             <width>31</width>
+             <height>26</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaPlaybackPause"/>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="cancel">
+           <property name="geometry">
+            <rect>
+             <x>310</x>
+             <y>20</y>
+             <width>31</width>
+             <height>26</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaPlaybackStop"/>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="resume">
+           <property name="geometry">
+            <rect>
+             <x>350</x>
+             <y>20</y>
+             <width>31</width>
+             <height>26</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart"/>
+           </property>
+          </widget>
+         </widget>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>QUEUE</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
-    </widget>
-   </widget>
-   <widget class="QScrollArea" name="scrollTransferQueue">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>330</y>
-      <width>451</width>
-      <height>131</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollTransferQueueContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>449</width>
-       <height>129</height>
-      </rect>
-     </property>
-     <widget class="QToolButton" name="toolBtnTransferStatus">
-      <property name="geometry">
-       <rect>
-        <x>150</x>
-        <y>20</y>
-        <width>91</width>
-        <height>25</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>STATUS</string>
-      </property>
+    </item>
+    <item>
+     <widget class="QWidget" name="widget_5" native="true">
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="0" column="2">
+        <widget class="QToolButton" name="TERMINAL">
+         <property name="text">
+          <string>TERMINAL</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QToolButton" name="SETTINGS">
+         <property name="text">
+          <string>SETTINGS</string>
+         </property>
+         <property name="popupMode">
+          <enum>QToolButton::ToolButtonPopupMode::MenuButtonPopup</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <spacer name="horizontalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </widget>
-     <widget class="QScrollBar" name="scrollBarTransferQueue">
-      <property name="geometry">
-       <rect>
-        <x>430</x>
-        <y>10</y>
-        <width>16</width>
-        <height>111</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="btnSuspendTransfer">
-      <property name="geometry">
-       <rect>
-        <x>270</x>
-        <y>20</y>
-        <width>31</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="icon">
-       <iconset theme="QIcon::ThemeIcon::MediaPlaybackPause">
-        <normaloff>.</normaloff>.</iconset>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="btnCancelTransfer">
-      <property name="geometry">
-       <rect>
-        <x>310</x>
-        <y>20</y>
-        <width>31</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="icon">
-       <iconset theme="QIcon::ThemeIcon::MediaPlaybackStop">
-        <normaloff>.</normaloff>.</iconset>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="btnResumeTransfer">
-      <property name="geometry">
-       <rect>
-        <x>350</x>
-        <y>20</y>
-        <width>31</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="icon">
-       <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart">
-        <normaloff>.</normaloff>.</iconset>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="txtQueueFilter">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>90</y>
-        <width>113</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Search File...</string>
-      </property>
-     </widget>
-    </widget>
-   </widget>
-   <widget class="QScrollArea" name="scrollDestinationDirectory">
-    <property name="geometry">
-     <rect>
-      <x>250</x>
-      <y>80</y>
-      <width>221</width>
-      <height>201</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollDestinationDirectoryContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>219</width>
-       <height>199</height>
-      </rect>
-     </property>
-     <widget class="QScrollBar" name="scrollBarDestinationDirectory">
-      <property name="geometry">
-       <rect>
-        <x>200</x>
-        <y>10</y>
-        <width>16</width>
-        <height>181</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="txtDestinationFileFilter">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>160</y>
-        <width>113</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Search File...</string>
-      </property>
-     </widget>
-    </widget>
-   </widget>
-   <widget class="QPushButton" name="btnSource">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>50</y>
-      <width>94</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>SOURCE</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnDestination">
-    <property name="geometry">
-     <rect>
-      <x>250</x>
-      <y>50</y>
-      <width>111</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>DESTINATION</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnFileRequest">
-    <property name="geometry">
-     <rect>
-      <x>370</x>
-      <y>50</y>
-      <width>101</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>FILE REQUEST</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnFileSend">
-    <property name="geometry">
-     <rect>
-      <x>150</x>
-      <y>50</y>
-      <width>91</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>FILE SEND</string>
-    </property>
-   </widget>
-   <widget class="QToolButton" name="toolBtnToolbar">
-    <property name="geometry">
-     <rect>
-      <x>370</x>
-      <y>10</y>
-      <width>101</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
-    </property>
-    <property name="contextMenuPolicy">
-     <enum>Qt::NoContextMenu</enum>
-    </property>
-    <property name="acceptDrops">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>TOOLBAR</string>
-    </property>
-    <property name="popupMode">
-     <enum>QToolButton::DelayedPopup</enum>
-    </property>
-    <property name="arrowType">
-     <enum>Qt::NoArrow</enum>
-    </property>
-   </widget>
-   <widget class="QToolButton" name="toolBtnSettings">
-    <property name="geometry">
-     <rect>
-      <x>25</x>
-      <y>470</y>
-      <width>91</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>SETTINGS</string>
-    </property>
-    <property name="popupMode">
-     <enum>QToolButton::DelayedPopup</enum>
-    </property>
-   </widget>
-   <widget class="QToolButton" name="toolBtnTerminal">
-    <property name="geometry">
-     <rect>
-      <x>370</x>
-      <y>470</y>
-      <width>101</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TERMINAL</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnQueue">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>300</y>
-      <width>94</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>QUEUE</string>
-    </property>
-   </widget>
+    </item>
+   </layout>
+   <zorder>widget_7</zorder>
+   <zorder>widget_5</zorder>
+   <zorder>widget_4</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>488</width>
-     <height>24</height>
+     <width>767</width>
+     <height>23</height>
     </rect>
    </property>
   </widget>
