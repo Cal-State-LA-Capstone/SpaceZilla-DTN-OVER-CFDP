@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 
 class TransferStatus(enum.Enum):
-    """Mirror of the six statuses in backend/fileQueue.py."""
+    """The six transfer statuses used by backend/fileQueue.py."""
 
     QUEUED = "Queued"
     RUNNING = "Running"
@@ -19,9 +19,9 @@ class TransferStatus(enum.Enum):
 
 @dataclass
 class NodeMeta:
-    """Lightweight summary shown in the Node Picker list.
+    """Summary info shown in the Node Picker list.
 
-    Stored as ``nodes/{node_id}/meta.json``.
+    Stored on disk as nodes/{node_id}/meta.json.
     """
 
     node_id: str
@@ -40,9 +40,9 @@ class RcFieldValue:
 
 @dataclass
 class NodeConfig:
-    """Full configuration needed to boot a node's Docker container.
+    """Everything needed to boot a node's Docker container.
 
-    Stored as ``nodes/{node_id}/config.json``.
+    Stored on disk as nodes/{node_id}/config.json.
     """
 
     node_id: str
@@ -55,9 +55,9 @@ class NodeConfig:
 
 @dataclass
 class NodeState:
-    """Ephemeral runtime state for a booted node.
+    """Runtime state for a booted node (not persistent across restarts).
 
-    Stored as ``nodes/{node_id}/state.json``.
+    Stored as nodes/{node_id}/state.json.
     Written by the controller on boot, cleared on shutdown.
     """
 
@@ -78,7 +78,7 @@ class DockerStatus:
 
     @staticmethod
     def ok() -> DockerStatus:
-        """Convenience constructor for the healthy case."""
+        """Shortcut for the happy path — Docker is available."""
         return DockerStatus(available=True, reason="ok", message="Docker is ready.")
 
 

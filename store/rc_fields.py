@@ -1,10 +1,8 @@
-"""Field spec for ionstart.rc form rendering.
+"""Field definitions for the ionstart.rc configuration form.
 
-Each entry describes one user-facing form field for the
-``ionstart.rc`` configuration. The Node Picker reads this list
-to dynamically build its form.
-
-Supported ``type`` values: ``"int"``, ``"str"``, ``"bool"``.
+The Node Picker reads RC_FIELDS to dynamically build its form.
+Each entry has a name, label, type ("int", "str", or "bool"),
+and default value. Add new fields here to extend the form.
 """
 
 from __future__ import annotations
