@@ -1,7 +1,8 @@
-"""frontend — GUI layer for SpaceZilla.
+"""frontend — GUI facade for the SpaceZilla controller.
 
-The controller calls these functions to show/hide the Node Picker
-and main window. All Qt widget creation lives behind this module.
+Provides high-level functions the controller uses to display
+the Node Picker, boot the main window, and tear down the GUI.
+All Qt object creation happens behind this facade.
 """
 
 from __future__ import annotations
@@ -17,11 +18,13 @@ def show_node_picker(
     on_select: Callable[[str], None],
     on_create: Callable[[str], None],
 ) -> None:
-    """Show the Node Picker dialog.
+    """Display the Node Picker dialog.
 
     Args:
-        on_select: Called with node_id when the user picks an existing node.
-        on_create: Called with node_id when the user creates a new node.
+        on_select: Called with ``node_id`` when the user picks
+            an existing node.
+        on_create: Called with ``node_id`` when the user creates
+            a new node via the form.
     """
     raise NotImplementedError
 
@@ -30,8 +33,8 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
     """Switch from the Node Picker to the main SpaceZilla window.
 
     Args:
-        node_id: Which node we're running.
-        ipc_port: Port the IPC server is listening on.
+        node_id: The active node's identifier.
+        ipc_port: The IPC server port for backend communication.
     """
     raise NotImplementedError
 
