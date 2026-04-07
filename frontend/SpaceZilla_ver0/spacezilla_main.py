@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 
 loader = QUiLoader()
 
+
 # Helper function to load UI
 def load_ui(ui_file):
     file = QFile(ui_file)
@@ -45,8 +46,9 @@ class MainWindow:
         self.source_tree = QTreeView()
         self.source_tree.setModel(self.model)
         self.source_tree.setRootIndex(self.model.index(QDir.homePath()))
-        self.source_tree.header().setSectionResizeMode(0,
-            self.source_tree.header().ResizeMode.Stretch)
+        self.source_tree.header().setSectionResizeMode(
+            0, self.source_tree.header().ResizeMode.Stretch
+        )
 
         source_area = self.window.findChild(QScrollArea, "SOURCE_DIRECT")
         print("SOURCE AREA:", source_area)
@@ -54,13 +56,13 @@ class MainWindow:
 
         # DESTINATION
 
-
         # FILE SELECTION HANDLER
         self.source_tree.doubleClicked.connect(self.file_selected)
 
         # FILE SELECTION DISPLAY
-        self.file_selected_display = self.window.findChild(QLineEdit,
-            "file_selected_display")
+        self.file_selected_display = self.window.findChild(
+            QLineEdit, "file_selected_display"
+        )
 
         # SEARCH BARS
         self.file_filter = self.window.findChild(QLineEdit, "file_filter")
@@ -146,7 +148,7 @@ class MainWindow:
         icons = {
             "resume": "media-playback-start",
             "suspend": "media-playback-pause",
-            "cancel": "media-playback-stop"
+            "cancel": "media-playback-stop",
         }
 
         for name, icon_name in icons.items():
@@ -160,7 +162,7 @@ class MainWindow:
         self.confirm_window.setWindowTitle("Confirm Send")
         self.confirm_window.show()
 
-    #Settings
+    # Settings
     # Dark Mode
     def enable_dark_mode(self):
         app = QApplication.instance()
@@ -201,14 +203,14 @@ class MainWindow:
         self.theme_window.setWindowTitle("Themes")
         self.theme_window.show()
 
-    #Toolbar
-    #Open File Log
+    # Toolbar
+    # Open File Log
     def fileLog(self):
         self.fileLog_window = load_ui("File_Log_ver0.ui")
         self.fileLog_window.setWindowTitle("File Log")
         self.fileLog_window.show()
 
-    #Open Recently Sent
+    # Open Recently Sent
     def recentlySent(self):
         self.recentlySent_window = load_ui("Recently_Sent_ver0.ui")
         self.recentlySent_window.setWindowTitle("Recently Sent")
@@ -247,11 +249,9 @@ class MainWindow:
 
         self.queue_layout.addWidget(row_widget)
 
-        self.queue_items.append({
-            "file": file_name,
-            "status": status_button,
-            "widget": row_widget
-        })
+        self.queue_items.append(
+            {"file": file_name, "status": status_button, "widget": row_widget}
+        )
 
     # Handles QUEUE
     def handle_file_send(self):
@@ -291,6 +291,7 @@ class MainWindow:
                 item["widget"].setVisible(True)
             else:
                 item["widget"].setVisible(False)
+
 
 if __name__ == "__main__":
     app = QApplication([])
