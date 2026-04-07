@@ -1,15 +1,24 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QToolButton, QPushButton, QLineEdit
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel, QLayout, QHBoxLayout, QDialog
-from PySide6.QtWidgets import QFileSystemModel, QTreeView
-from PySide6.QtWidgets import QScrollArea
-from PySide6.QtCore import QDir                            
-from PySide6.QtGui import QAction, QPalette, QColor
-from PySide6.QtCore import Qt, QFile
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QHeaderView
-import subprocess
 import os
+import subprocess
+
+from PySide6.QtCore import QDir, QFile, Qt
+from PySide6.QtGui import QAction, QColor, QIcon, QPalette
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QFileSystemModel,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QPushButton,
+    QScrollArea,
+    QToolButton,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
 
 loader = QUiLoader()
 
@@ -26,17 +35,18 @@ class MainWindow:
     def __init__(self):
         self.window = load_ui("SpaceZilla_ver0.ui")
         self.window.setWindowTitle("SpaceZilla")
-        
+
         print("SETTING UP FILE EXPLORER")
         # File Explorer
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.rootPath())
-        
+
         # SOURCE
         self.source_tree = QTreeView()
         self.source_tree.setModel(self.model)
         self.source_tree.setRootIndex(self.model.index(QDir.homePath()))
-        self.source_tree.header().setSectionResizeMode(0, self.source_tree.header().ResizeMode.Stretch)
+        self.source_tree.header().setSectionResizeMode(0,
+            self.source_tree.header().ResizeMode.Stretch)
 
         source_area = self.window.findChild(QScrollArea, "SOURCE_DIRECT")
         print("SOURCE AREA:", source_area)
@@ -44,13 +54,14 @@ class MainWindow:
 
         # DESTINATION
 
-        
+
         # FILE SELECTION HANDLER
         self.source_tree.doubleClicked.connect(self.file_selected)
-        
+
         # FILE SELECTION DISPLAY
-        self.file_selected_display = self.window.findChild(QLineEdit, "file_selected_display")
-        
+        self.file_selected_display = self.window.findChild(QLineEdit,
+            "file_selected_display")
+
         # SEARCH BARS
         self.file_filter = self.window.findChild(QLineEdit, "file_filter")
         self.queue_filter = self.window.findChild(QLineEdit, "queue_filter")
@@ -60,18 +71,18 @@ class MainWindow:
 
         # Default: Light Mode
         self.dark_mode = False
-        
+
         # Apply icons to buttons
         self.apply_theme_icons()
-        
+
         # send/request confirmation window
         self.file_send = self.window.findChild(QPushButton, "file_send")
-        
+
         self.file_send.clicked.connect(self.open_send_confirmation)
 
         # QUEUE
         self.file_send.clicked.connect(self.handle_file_send)
-        
+
         # Find widgets from UI
         self.TOOLBAR = self.window.findChild(QToolButton, "TOOLBAR")
         self.SETTINGS = self.window.findChild(QToolButton, "SETTINGS")
@@ -85,7 +96,7 @@ class MainWindow:
 
         toolbarMenu.addAction(action_fileLog)
         toolbarMenu.addAction(action_recentlySent)
-        
+
         action_fileLog.triggered.connect(self.fileLog)
         action_recentlySent.triggered.connect(self.recentlySent)
 
@@ -128,16 +139,16 @@ class MainWindow:
     # Terminal
     def open_terminal(self):
         subprocess.Popen(["x-terminal-emulator"])
-       
+
     # apply icons to suspend, cancel, resume
     def apply_theme_icons(self):
-    
+
         icons = {
             "resume": "media-playback-start",
             "suspend": "media-playback-pause",
             "cancel": "media-playback-stop"
         }
-        
+
         for name, icon_name in icons.items():
             btn = self.window.findChild(QPushButton, name)
             if btn:
@@ -148,7 +159,7 @@ class MainWindow:
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         self.confirm_window.setWindowTitle("Confirm Send")
         self.confirm_window.show()
-    
+
     #Settings
     # Dark Mode
     def enable_dark_mode(self):
@@ -247,22 +258,23 @@ class MainWindow:
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         self.confirm_window.setWindowTitle("Confirm Send")
 
-        result = self.confirm_window.exec() # blocks action until user clicks OK or Cancel
+        result = self.confirm_window.exec()
+        # blocks action until user clicks OK or Cancel
 
         if result == QDialog.Accepted:
             self.add_to_queue()
         else:
             print("User cancelled file send")
-            
+
     # HANDLE FILE SELECT
     def file_selected(self, index):
         path = self.model.filePath(index)
         print("Selected file:", path)
-        
+
         if os.path.isfile(path):  # Only display if file, not folder
             self.file_selected_display.setText(os.path.basename(path))
             self.selected_file_path = path  # Store full path when you send the file
-        
+
     # Handles search in source
     def filter_files(self, text):
         if text:
@@ -271,7 +283,7 @@ class MainWindow:
         else:
             self.model.setNameFilters([])  # Clear filter when search bar is empty
             self.model.setNameFilterDisables(True)
-            
+
     # Handles search in queue
     def filter_queue(self, text):
         for item in self.queue_items:
@@ -279,7 +291,7 @@ class MainWindow:
                 item["widget"].setVisible(True)
             else:
                 item["widget"].setVisible(False)
-                
+
 if __name__ == "__main__":
     app = QApplication([])
     main = MainWindow()
