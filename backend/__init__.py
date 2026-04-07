@@ -7,10 +7,15 @@ out to the docker CLI via subprocess.
 
 from __future__ import annotations
 
+import platform
 import subprocess
+import time
 from pathlib import Path
 
+from runtime_logger import get_logger
 from store.models import DockerStatus, NodeConfig
+
+logger = get_logger("backend")
 
 # Name we tag the built image with
 _IMAGE_NAME = "spacezilla-ion"
@@ -36,7 +41,11 @@ def build_image(*, force: bool = False) -> None:
         if result.stdout.strip():
             return  # already built, nothing to do
 
-    subprocess.run(
+    logger.info(
+        "Building Docker image '%s' (this may take a few minutes)...",
+        _IMAGE_NAME,
+    )
+    result = subprocess.run(
         [
             "docker",
             "build",
@@ -46,8 +55,12 @@ def build_image(*, force: bool = False) -> None:
             str(_DOCKERFILE),
             str(_DOCKERFILE.parent),
         ],
-        check=True,
+        capture_output=True,
+        text=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"Docker image build failed: {result.stderr.strip()}")
+    logger.info("Docker image '%s' built successfully", _IMAGE_NAME)
 
 
 def start_container(config: NodeConfig) -> str:
@@ -55,6 +68,11 @@ def start_container(config: NodeConfig) -> str:
     # Container name uses the first 12 chars of the node_id so it's
     # recognizable in `docker ps` but still unique enough.
     container_name = f"spacezilla-{config.node_id[:12]}"
+
+    # Remove any stale container with the same name from a previous
+    # failed run so docker doesn't refuse to create a new one.
+    subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
+
     result = subprocess.run(
         [
             "docker",
@@ -78,8 +96,11 @@ def start_container(config: NodeConfig) -> str:
         ],
         capture_output=True,
         text=True,
-        check=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"docker run failed: {result.stderr.strip() or result.stdout.strip()}"
+        )
     return result.stdout.strip()
 
 
@@ -103,6 +124,78 @@ def container_running(container_id: str) -> bool:
         text=True,
     )
     return result.returncode == 0 and result.stdout.strip() == "true"
+
+
+def _find_linux_docker_start_cmd() -> list[str] | None:
+    """Figure out how to start Docker on this Linux system.
+
+    Returns the systemctl command list, or None if we can't find one.
+    Checks in order:
+      1. docker.service  (docker-ce installed)
+      2. podman.socket   (Fedora / RHEL — podman as Docker-compatible daemon)
+    """
+    for unit in ["docker", "podman.socket"]:
+        result = subprocess.run(
+            ["systemctl", "list-unit-files", unit],
+            capture_output=True,
+            text=True,
+        )
+        if unit in result.stdout:
+            return ["pkexec", "systemctl", "start", unit]
+    return None
+
+
+def start_docker() -> DockerStatus:
+    """Try to start the Docker/Podman daemon automatically.
+
+    Cross-platform:
+      - Linux: starts docker.service or podman.socket via pkexec
+        (graphical password prompt)
+      - macOS: opens Docker Desktop
+      - Windows: opens Docker Desktop
+    Waits up to 20 seconds for the daemon to become ready.
+    """
+    system = platform.system()
+    try:
+        if system == "Linux":
+            cmd = _find_linux_docker_start_cmd()
+            if cmd is None:
+                return DockerStatus(
+                    available=False,
+                    reason="not_installed",
+                    message=(
+                        "No Docker or Podman service found. "
+                        "Install docker-ce or podman."
+                    ),
+                )
+            subprocess.run(cmd, check=True)
+        elif system == "Darwin":
+            subprocess.run(["open", "-a", "Docker"], check=True)
+        elif system == "Windows":
+            subprocess.run(["cmd", "/c", "start", "", "Docker Desktop"], check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return DockerStatus(
+            available=False,
+            reason="start_failed",
+            message="Could not start Docker automatically.",
+        )
+
+    # The daemon takes a few seconds to initialize.
+    logger.info("Waiting for Docker daemon to start...")
+    for _ in range(10):
+        time.sleep(2)
+        logger.debug("Docker not ready yet, retrying...")
+        status = check_docker()
+        if status.available:
+            logger.info("Docker daemon is ready")
+            return status
+
+    logger.warning("Docker daemon did not start within 20 seconds")
+    return DockerStatus(
+        available=False,
+        reason="timeout",
+        message="Docker was started but isn't ready yet. Try again.",
+    )
 
 
 def check_docker() -> DockerStatus:

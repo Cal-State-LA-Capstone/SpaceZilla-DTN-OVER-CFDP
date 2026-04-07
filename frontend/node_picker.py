@@ -10,9 +10,10 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import backend
 import store
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from store.models import DockerStatus, NodeMeta
 from store.rc_fields import RC_FIELDS
 
@@ -21,11 +22,25 @@ if TYPE_CHECKING:
 
 
 def check_docker_available() -> DockerStatus:
-    """Verify Docker is installed, daemon is running, and accessible.
+    """Check if Docker is running; offer to start it if not.
 
-    TODO(teammate): implement real checks. Currently returns OK.
+    Calls backend.check_docker() to get the real status. If Docker
+    is down, shows a dialog asking the user whether to start it.
+    On Linux this triggers a graphical password prompt (pkexec).
+    On macOS/Windows it opens Docker Desktop.
     """
-    return DockerStatus.ok()
+    status = backend.check_docker()
+    if status.available:
+        return status
+
+    reply = QMessageBox.question(
+        None,
+        "Docker Not Running",
+        f"{status.message}\n\nStart Docker now?",
+    )
+    if reply == QMessageBox.StandardButton.Yes:
+        return backend.start_docker()
+    return status
 
 
 def load_node_list() -> list[NodeMeta]:
@@ -38,14 +53,16 @@ def open_node_picker(
     on_select: Callable[[str], None],
     on_create: Callable[[str], None],
 ) -> None:
-    """Instantiate and show the NodePickerDialog.
+    """Create and show the NodePickerDialog.
 
-    Loads ``NodePickerDialog.ui``, populates the node list,
+    Loads NodePickerDialog.ui, populates the node list,
     runs the Docker health check, and wires button signals.
 
     Args:
-        on_select: Called with ``node_id`` when user selects a node.
-        on_create: Called with ``node_id`` when user creates a node.
+        on_select: Called with node_id when user selects a node.
+            Must return True on success, False on failure.
+        on_create: Called with node_id when user creates a node.
+            Must return True on success, False on failure.
     """
     # Make sure we have a QApplication (reuse one if it already exists)
     QApplication.instance() or QApplication(sys.argv)
@@ -80,8 +97,15 @@ def open_node_picker(
     def _on_boot_clicked():
         row = dialog.listNodes.currentRow()
         if 0 <= row < len(node_ids):
-            on_select(node_ids[row])
-            dialog.accept()
+            success = on_select(node_ids[row])
+            if success:
+                dialog.accept()
+            else:
+                QMessageBox.warning(
+                    dialog,
+                    "Boot Failed",
+                    "Could not start the node. Check Docker status.",
+                )
 
     def _on_create_clicked():
         # Use the default values from RC_FIELDS to create a quick node
@@ -91,8 +115,18 @@ def open_node_picker(
         name_field = next((f for f in rc_values if f.name == "node_name"), None)
         name = str(name_field.value) if name_field and name_field.value else ""
         node_id = store.create_node(name=name, rc_fields=rc_values)
-        on_create(node_id)
-        dialog.accept()
+
+        success = on_create(node_id)
+        if success:
+            dialog.accept()
+        else:
+            # Clean up so this node doesn't show up next launch
+            store.delete_node(node_id)
+            QMessageBox.warning(
+                dialog,
+                "Boot Failed",
+                "Could not start the node. Check Docker status.",
+            )
 
     # Wire up Qt signals to our handler functions
     dialog.listNodes.currentRowChanged.connect(_on_selection_changed)

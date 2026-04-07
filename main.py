@@ -31,15 +31,23 @@ def main() -> None:
     runtime_logger.setup_logging()
 
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
 
     ctrl = Controller()
 
     # The Node Picker is the first window the user sees.
     # Both callbacks point to ctrl.boot because selecting an existing
     # node and creating a new one follow the same boot path.
+    # show_node_picker blocks (dialog.exec) until the user picks a
+    # node or closes the dialog.
     frontend.show_node_picker(on_select=ctrl.boot, on_create=ctrl.boot)
 
-    app.exec()  # blocks until the user closes the app
+    # Only enter the Qt event loop if a node was actually booted
+    # (meaning a main window is now open). If the user dismissed the
+    # Node Picker without selecting anything, just exit cleanly.
+    if ctrl._node_id is not None:
+        app.exec()  # blocks until the user closes the app
+
     ctrl.shutdown()
 
 

@@ -72,8 +72,12 @@ class Controller:
 
     # -- Public API ----------------------------------------------------------
 
-    def boot(self, node_id: str) -> None:
+    def boot(self, node_id: str) -> bool:
         """Bring up everything needed to run a node.
+
+        Returns True on success, False if something went wrong.
+        On failure any partially-started resources (container, IPC
+        server) are cleaned up automatically via shutdown().
 
         Steps (in order):
             1. Read the node's config.json from disk.
@@ -85,32 +89,39 @@ class Controller:
             5. Tell the frontend to show the main SpaceZilla window.
         """
         logger.info("Booting node %s", node_id)
-        self._node_id = node_id
 
-        self._config = store.load_config(node_id)
+        try:
+            self._node_id = node_id
+            self._config = store.load_config(node_id)
 
-        self._container_id = backend.start_container(self._config)
-        logger.info("Container started: %s", self._container_id)
+            # Build the Docker image if it doesn't exist yet
+            backend.build_image()
 
-        # port=0 tells the OS to pick a free port for us
-        self._start_ipc_server()
-        logger.info("IPC server listening on 127.0.0.1:%s", self._ipc_port)
+            self._container_id = backend.start_container(self._config)
+            logger.info("Container started: %s", self._container_id)
 
-        # Persist runtime info so other processes (or a crash-recovery
-        # tool) can find this node while it's alive.
-        store.save_state(
-            node_id,
-            NodeState(
-                node_id=node_id,
-                pid=os.getpid(),
-                ipc_port=self._ipc_port,
-                container_id=self._container_id,
-                status="running",
-            ),
-        )
+            self._start_ipc_server()
+            logger.info("IPC server listening on 127.0.0.1:%s", self._ipc_port)
 
-        assert self._ipc_port is not None
-        frontend.show_main_window(node_id, self._ipc_port)
+            store.save_state(
+                node_id,
+                NodeState(
+                    node_id=node_id,
+                    pid=os.getpid(),
+                    ipc_port=self._ipc_port,
+                    container_id=self._container_id,
+                    status="running",
+                ),
+            )
+
+            assert self._ipc_port is not None
+            frontend.show_main_window(node_id, self._ipc_port)
+            return True
+
+        except Exception as e:
+            logger.error("Boot failed for node %s: %s", node_id, e)
+            self.shutdown()
+            return False
 
     def spawn_peer(self) -> None:
         """Open a brand-new SpaceZilla process for a second node.

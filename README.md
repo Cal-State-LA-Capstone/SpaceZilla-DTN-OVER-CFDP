@@ -70,6 +70,13 @@ python -m spacezilla
 
 Each SpaceZilla process manages exactly one ION node. To run multiple nodes, the GUI spawns a new independent process — each with its own Docker container, IPC server, and window.
 
+### Troubleshooting
+
+- **"Docker Not Running" dialog appears** — Click "Yes" to start Docker automatically. On Linux you'll be asked for your password. On macOS/Windows, Docker Desktop will open.
+- **Docker Desktop won't start** — Make sure Docker is installed. See https://docs.docker.com/get-docker/
+- **"Boot Failed" warning** — Docker may be running but the ION image isn't built yet. Ask a team member or check [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for dev setup steps.
+- **Process won't exit after closing the window** — Press Ctrl+C in the terminal.
+
 ## How to Test
 
 ### Run all tests

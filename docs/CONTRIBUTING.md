@@ -136,6 +136,8 @@ Backend functions live in `backend/__init__.py`. They shell out to the Docker CL
 2. Wire it to an IPC endpoint in `controller.py`
 3. The GUI calls the endpoint via HTTP
 
+**Logging:** Use `from runtime_logger import get_logger` for status messages — don't use `print()`. The logger writes to both the terminal and `logs/spacezilla.log` with timestamps. See `backend/__init__.py` for the pattern.
+
 Example — restarting a container:
 
 ```python
@@ -233,6 +235,25 @@ The Node Picker form is driven by `store/rc_fields.py`. To add a new field:
 | Frontend | Store | Direct function call | `store.list_nodes()` |
 | Controller | New process | `subprocess.Popen` | `ctrl.spawn_peer()` |
 | Backend | Docker | `subprocess.run` | `subprocess.run(["docker", "start", ...])` |
+
+## Error Handling
+
+SpaceZilla follows a consistent pattern for handling failures:
+
+- **`controller.boot()` returns a bool.** If anything goes wrong (Docker down, container won't start, etc.), it logs the error, cleans up any partially-started resources via `shutdown()`, and returns `False`. Callers check the return value.
+
+- **Node Picker checks boot results.** If `boot()` returns False, the Node Picker shows a `QMessageBox.warning()` and stays open so the user can try again. If a node was just created and boot fails, the Node Picker deletes it from disk so it doesn't show up as a phantom entry next launch.
+
+- **Docker is checked on startup.** `check_docker_available()` in `node_picker.py` calls `backend.check_docker()` (runs `docker info`). If Docker is down, it prompts the user to start it. If the user declines, Boot/Create buttons are disabled with an error message.
+
+- **When adding new features that can fail:** catch exceptions, clean up partial state, return a success/failure indicator, and surface the error to the user via `QMessageBox`.
+
+## Dev Troubleshooting
+
+- **Docker image not built** — `docker build -t spacezilla-ion -f docker/pyion_v414a2.dockerfile docker/`
+- **Phantom nodes in store** — Delete from `~/.local/share/SpaceZilla/nodes/`
+- **Container name conflict** — `docker rm spacezilla-<node_id_prefix>` to remove stale containers
+- **"Could not start Docker automatically"** — On Linux, make sure `pkexec` and `systemctl` are available. On macOS/Windows, make sure Docker Desktop is installed.
 
 ## Running Tests
 
