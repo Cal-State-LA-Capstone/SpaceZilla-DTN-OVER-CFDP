@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 from store.models import GlobalSettings
+from store.paths import global_dir, settings_path
 
 
 def load_settings() -> GlobalSettings:
@@ -10,7 +13,11 @@ def load_settings() -> GlobalSettings:
 
     Returns defaults if the file does not exist.
     """
-    raise NotImplementedError
+    path = settings_path()
+    if not path.exists():
+        return GlobalSettings()
+    data = json.loads(path.read_text())
+    return GlobalSettings(**data)
 
 
 def load_theme(theme_name: str) -> dict[str, str]:
@@ -18,4 +25,7 @@ def load_theme(theme_name: str) -> dict[str, str]:
 
     Returns a dict mapping widget role names to color strings.
     """
-    raise NotImplementedError
+    path = global_dir() / "themes" / f"{theme_name}.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text())
