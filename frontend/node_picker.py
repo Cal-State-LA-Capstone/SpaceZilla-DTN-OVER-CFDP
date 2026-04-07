@@ -32,13 +32,13 @@ def open_node_picker(
     on_select: Callable[[str], None],
     on_create: Callable[[str], None],
 ) -> None:
-    """Instantiate and show the NodePickerDialog.
+    """Create and show the NodePickerDialog.
 
-    Loads ``NodePickerDialog.ui``, populates the node list,
+    Loads NodePickerDialog.ui, populates the node list,
     runs the Docker health check, and wires button signals.
 
     Args:
-        on_select: Called with ``node_id`` when user selects a node.
-        on_create: Called with ``node_id`` when user creates a node.
+        on_select: Called with node_id when user selects a node.
+        on_create: Called with node_id when user creates a node.
     """
     raise NotImplementedError
