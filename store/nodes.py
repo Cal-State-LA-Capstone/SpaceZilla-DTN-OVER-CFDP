@@ -1,7 +1,7 @@
 """Per-node CRUD operations for on-disk storage.
 
-Every write function takes ``node_id`` explicitly so the
-"writes only to own dir" boundary is grep-auditable.
+Every write function takes node_id explicitly — a node's process
+should only ever read/write its own directory.
 """
 
 from __future__ import annotations

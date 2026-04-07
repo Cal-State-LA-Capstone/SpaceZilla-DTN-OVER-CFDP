@@ -1,7 +1,8 @@
-"""store — Pure-function file I/O for SpaceZilla node data.
+"""store — File I/O for SpaceZilla node data.
 
-Every write function takes ``node_id`` explicitly so the
-"writes only to own dir" boundary is grep-auditable.
+Handles reading/writing node configs, metadata, and state to disk.
+Every write function takes node_id explicitly so a node's process
+only touches its own directory.
 """
 
 from store.globals import load_settings, load_theme
