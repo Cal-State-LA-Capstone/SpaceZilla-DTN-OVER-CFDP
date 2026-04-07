@@ -1,8 +1,7 @@
-"""backend — Docker/ION lifecycle facade.
+"""backend — Docker/ION container management.
 
 The controller calls these functions to build, start, and stop
-Docker containers that run ION nodes. Each container corresponds
-to one SpaceZilla node instance.
+the Docker containers that run ION nodes.
 """
 
 from __future__ import annotations

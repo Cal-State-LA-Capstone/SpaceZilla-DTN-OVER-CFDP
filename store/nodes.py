@@ -1,7 +1,7 @@
 """Per-node CRUD operations for on-disk storage.
 
-Every write function takes ``node_id`` explicitly so the
-"writes only to own dir" boundary is grep-auditable.
+Every write function takes node_id explicitly — a node's process
+should only ever read/write its own directory.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from store.models import NodeConfig, NodeMeta, NodeState, RcFieldValue
 def list_nodes() -> list[NodeMeta]:
     """Return metadata for every node on disk.
 
-    Reads ``meta.json`` from each subdirectory under ``nodes/``.
+    Reads meta.json from each subdirectory under nodes/.
     """
     raise NotImplementedError
 
@@ -53,7 +53,7 @@ def create_node(
 ) -> str:
     """Create a new node directory with meta.json and config.json.
 
-    Returns the generated ``node_id`` (a UUID4 hex string).
+    Returns the generated node_id (a UUID4 hex string).
     """
     raise NotImplementedError
 
