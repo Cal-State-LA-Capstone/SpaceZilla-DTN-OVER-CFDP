@@ -42,11 +42,12 @@ def main() -> None:
     # node or closes the dialog.
     frontend.show_node_picker(on_select=ctrl.boot, on_create=ctrl.boot)
 
-    # Only enter the Qt event loop if a node was actually booted
-    # (meaning a main window is now open). If the user dismissed the
-    # Node Picker without selecting anything, just exit cleanly.
-    if ctrl._node_id is not None:
-        app.exec()  # blocks until the user closes the app
+    # If boot succeeded, open the main window on the main thread
+    # (Qt widgets can't be created from background threads).
+    # Then enter the event loop until the user closes the window.
+    if ctrl._node_id is not None and ctrl._ipc_port is not None:
+        frontend.show_main_window(ctrl._node_id, ctrl._ipc_port)
+        app.exec()
 
     ctrl.shutdown()
 

@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from typing import TYPE_CHECKING
 
 import backend
@@ -101,6 +102,15 @@ class Controller:
             logger.info("Container started: %s", self._container_id)
 
             self._start_ipc_server()
+
+            # Uvicorn binds the socket in its thread — wait for the port
+            for _ in range(50):
+                if self._ipc_port is not None:
+                    break
+                time.sleep(0.1)
+            else:
+                raise RuntimeError("IPC server did not bind within 5 seconds")
+
             logger.info("IPC server listening on 127.0.0.1:%s", self._ipc_port)
 
             store.save_state(
@@ -114,8 +124,8 @@ class Controller:
                 ),
             )
 
-            assert self._ipc_port is not None
-            frontend.show_main_window(node_id, self._ipc_port)
+            # GUI window is created by main.py on the main thread
+            # (Qt widgets can't be created from a worker thread).
             return True
 
         except Exception as e:

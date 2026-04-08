@@ -257,6 +257,16 @@ SpaceZilla follows a consistent pattern for handling failures:
 - **Container name conflict** — `docker rm spacezilla-<node_id_prefix>` to remove stale containers
 - **"Could not start Docker automatically"** — On Linux, make sure `pkexec` and `systemctl` are available. On macOS/Windows, make sure Docker Desktop is installed.
 
+## Extending ION Configuration
+
+The ionstart.rc file is generated from a template in `backend/rc_generator.py`. To add new ION configuration options:
+
+1. Add a field to `RC_FIELDS` in `store/rc_fields.py` — the New Node form picks it up automatically
+2. Add the `{placeholder}` to `_RC_TEMPLATE` in `backend/rc_generator.py`
+3. Extract the value in `generate_rc()` and pass it to `.format()`
+
+The template uses the ionstart format documented at https://github.com/nasa-jpl/ION-DTN.
+
 ## Running Tests
 
 ```bash

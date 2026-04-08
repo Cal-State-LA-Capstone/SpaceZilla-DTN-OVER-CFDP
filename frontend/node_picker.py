@@ -16,8 +16,14 @@ from PySide6.QtCore import QFile, QThread, Signal
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLineEdit,
     QMessageBox,
     QProgressDialog,
+    QSpinBox,
 )
 from store.models import DockerStatus, NodeMeta
 from store.rc_fields import RC_FIELDS
@@ -29,7 +35,7 @@ if TYPE_CHECKING:
 class _BootWorker(QThread):
     """Runs a boot callback in a background thread.
 
-    Emits ``finished(bool)`` when done so the GUI can react
+    Emits finished(bool) when done so the GUI can react
     without blocking the Qt event loop.
     """
 
@@ -89,10 +95,8 @@ def open_node_picker(
         on_create: Called with node_id when user creates a node.
             Must return True on success, False on failure.
     """
-    # Make sure we have a QApplication (reuse one if it already exists)
     QApplication.instance() or QApplication(sys.argv)
 
-    # Load the dialog layout from the .ui file created in Qt Designer
     ui_path = Path(__file__).parent / "NodePickerDialog.ui"
     loader = QUiLoader()
     ui_file = QFile(str(ui_path))
@@ -105,10 +109,9 @@ def open_node_picker(
     for node in nodes:
         dialog.listNodes.addItem(f"{node.name}  ({node.node_id[:8]})")
 
-    # Keep a parallel list of IDs so we can map row index -> node_id
     node_ids = [n.node_id for n in nodes]
 
-    # Show Docker health in the status label
+    # Docker health check (may prompt to start Docker)
     docker_status = check_docker_available()
     dialog.lblDockerStatus.setText(f"Docker status: {docker_status.message}")
 
@@ -120,7 +123,7 @@ def open_node_picker(
             "Starting node (building image if needed)...",
             None,  # no cancel button
             0,
-            0,  # min=max=0 → indeterminate spinner
+            0,  # indeterminate spinner
             dialog,
         )
         progress.setWindowTitle("Booting Node")
@@ -144,8 +147,55 @@ def open_node_picker(
 
         worker.finished.connect(_on_done)
         worker.start()
-        # prevent garbage collection while the thread is running
         dialog._boot_worker = worker
+
+    # -- New Node form -------------------------------------------------
+
+    def _show_new_node_form():
+        """Show a form for ionstart.rc fields. Returns (name, rc_values) or None."""
+        form = QDialog(dialog)
+        form.setWindowTitle("Create New Node")
+        layout = QFormLayout(form)
+
+        widgets = {}
+        for field in RC_FIELDS:
+            if field["type"] == "int":
+                w = QSpinBox()
+                w.setMaximum(999999)
+                w.setValue(field["default"])
+            elif field["type"] == "bool":
+                w = QCheckBox()
+                w.setChecked(field["default"])
+            else:
+                w = QLineEdit()
+                w.setText(str(field["default"]))
+            layout.addRow(field["label"], w)
+            widgets[field["name"]] = w
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(form.accept)
+        buttons.rejected.connect(form.reject)
+        layout.addRow(buttons)
+
+        if form.exec() != QDialog.DialogCode.Accepted:
+            return None
+
+        rc_values = []
+        for field in RC_FIELDS:
+            w = widgets[field["name"]]
+            if field["type"] == "int":
+                val = w.value()
+            elif field["type"] == "bool":
+                val = w.isChecked()
+            else:
+                val = w.text()
+            rc_values.append(store.RcFieldValue(name=field["name"], value=val))
+
+        name_val = next((v for v in rc_values if v.name == "node_name"), None)
+        name = str(name_val.value) if name_val and name_val.value else ""
+        return name, rc_values
 
     # -- Signal handlers -----------------------------------------------
 
@@ -159,15 +209,14 @@ def open_node_picker(
             _start_boot(node_ids[row], on_select)
 
     def _on_create_clicked():
-        rc_values = [
-            store.RcFieldValue(name=f["name"], value=f["default"]) for f in RC_FIELDS
-        ]
-        name_field = next((f for f in rc_values if f.name == "node_name"), None)
-        name = str(name_field.value) if name_field and name_field.value else ""
+        result = _show_new_node_form()
+        if result is None:
+            return  # user cancelled the form
+        name, rc_values = result
         node_id = store.create_node(name=name, rc_fields=rc_values)
         _start_boot(node_id, on_create, cleanup_node_id=node_id)
 
-    # Wire up Qt signals to our handler functions
+    # Wire up Qt signals
     dialog.listNodes.currentRowChanged.connect(_on_selection_changed)
     dialog.btnBootNode.clicked.connect(_on_boot_clicked)
     dialog.btnCreateNode.clicked.connect(_on_create_clicked)

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import platform
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -64,35 +65,53 @@ def build_image(*, force: bool = False) -> None:
 
 
 def start_container(config: NodeConfig) -> str:
-    """Run a detached container for this node. Returns the container ID."""
-    # Container name uses the first 12 chars of the node_id so it's
-    # recognizable in `docker ps` but still unique enough.
+    """Run a detached container for this node. Returns the container ID.
+
+    Generates an ionstart.rc file from the node config, mounts it
+    into the container, and runs ionstart so ION is ready for PyION.
+    """
+    from backend.rc_generator import generate_rc
+
     container_name = f"spacezilla-{config.node_id[:12]}"
 
-    # Remove any stale container with the same name from a previous
-    # failed run so docker doesn't refuse to create a new one.
+    # Remove any stale container with the same name from a previous run
     subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
+
+    # Generate ionstart.rc and write to a temp file on the host.
+    # delete=False so it stays on disk while the container uses it.
+    rc_content = generate_rc(config)
+    rc_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".rc", prefix="ionstart_", delete=False
+    )
+    rc_file.write(rc_content)
+    rc_file.close()
+    logger.debug("Generated ionstart.rc at %s", rc_file.name)
 
     result = subprocess.run(
         [
             "docker",
             "run",
-            "-d",  # detached
+            "-d",
             "--name",
             container_name,
             "--cpus",
-            "1.0",  # limit to 1 CPU core
+            "1.0",
             "--memory",
-            "512m",  # limit to 512 MB RAM
-            # Pass ION config as env vars so the container can
-            # set up its node on startup.
+            "512m",
             "-e",
             f"ION_NODE_NUMBER={config.ion_node_number}",
             "-e",
             f"ION_ENTITY_ID={config.ion_entity_id}",
             "-e",
             f"BP_ENDPOINT={config.bp_endpoint}",
+            # Mount the generated .rc file into the container
+            "-v",
+            f"{rc_file.name}:/home/ionstart.rc:ro",
             _IMAGE_NAME,
+            # Start ION with the .rc file, then stay alive for PyION
+            "bash",
+            "-c",
+            "ionstart -I /home/ionstart.rc && tail -f /dev/null",
         ],
         capture_output=True,
         text=True,
