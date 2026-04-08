@@ -24,6 +24,22 @@ cd SpaceZilla-DTN-OVER-CFDP
 uv sync
 ```
 
+### Docker Setup (one-time)
+
+After installing Docker, add your user to the `docker` group so SpaceZilla can manage containers without needing root:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+**Log out and log back in** (or reboot) for the change to take effect. Verify it worked:
+
+```bash
+docker info
+```
+
+If it prints server info without "permission denied", you're good. SpaceZilla will auto-start the Docker daemon if it's not running.
+
 ### Environment Groups
 
 uv manages two dependency groups in `pyproject.toml`:
