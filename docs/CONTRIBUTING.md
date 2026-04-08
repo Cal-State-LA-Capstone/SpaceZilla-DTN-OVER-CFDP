@@ -248,6 +248,8 @@ SpaceZilla follows a consistent pattern for handling failures:
 
 - **When adding new features that can fail:** catch exceptions, clean up partial state, return a success/failure indicator, and surface the error to the user via `QMessageBox`.
 
+- **Don't block the Qt main thread.** Any operation that takes more than ~100ms (Docker builds, network calls, subprocess waits) must run in a `QThread`. Use the `_BootWorker` pattern in `frontend/node_picker.py` as a reference — spawn a `QThread`, show a `QProgressDialog`, and handle the result via a signal. This is why boot doesn't freeze the GUI.
+
 ## Dev Troubleshooting
 
 - **Docker image not built** — `docker build -t spacezilla-ion -f docker/pyion_v414a2.dockerfile docker/`

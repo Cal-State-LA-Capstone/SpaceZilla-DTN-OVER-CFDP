@@ -134,7 +134,7 @@ def _find_linux_docker_start_cmd() -> list[str] | None:
       1. docker.service  (docker-ce installed)
       2. podman.socket   (Fedora / RHEL — podman as Docker-compatible daemon)
     """
-    for unit in ["docker", "podman.socket"]:
+    for unit in ["docker.service", "podman.socket"]:
         result = subprocess.run(
             ["systemctl", "list-unit-files", unit],
             capture_output=True,

@@ -12,13 +12,37 @@ from typing import TYPE_CHECKING
 
 import backend
 import store
+from PySide6.QtCore import QFile, QThread, Signal
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import (
+    QApplication,
+    QMessageBox,
+    QProgressDialog,
+)
 from store.models import DockerStatus, NodeMeta
 from store.rc_fields import RC_FIELDS
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+class _BootWorker(QThread):
+    """Runs a boot callback in a background thread.
+
+    Emits ``finished(bool)`` when done so the GUI can react
+    without blocking the Qt event loop.
+    """
+
+    finished = Signal(bool)
+
+    def __init__(self, callback, node_id):
+        super().__init__()
+        self._callback = callback
+        self._node_id = node_id
+
+    def run(self):
+        result = self._callback(self._node_id)
+        self.finished.emit(result)
 
 
 def check_docker_available() -> DockerStatus:
@@ -57,6 +81,7 @@ def open_node_picker(
 
     Loads NodePickerDialog.ui, populates the node list,
     runs the Docker health check, and wires button signals.
+    Boot operations run in a QThread so the GUI stays responsive.
 
     Args:
         on_select: Called with node_id when user selects a node.
@@ -70,8 +95,6 @@ def open_node_picker(
     # Load the dialog layout from the .ui file created in Qt Designer
     ui_path = Path(__file__).parent / "NodePickerDialog.ui"
     loader = QUiLoader()
-    from PySide6.QtCore import QFile
-
     ui_file = QFile(str(ui_path))
     ui_file.open(QFile.ReadOnly)
     dialog = loader.load(ui_file)
@@ -89,44 +112,60 @@ def open_node_picker(
     docker_status = check_docker_available()
     dialog.lblDockerStatus.setText(f"Docker status: {docker_status.message}")
 
-    def _on_selection_changed():
-        # Only enable the Boot button if something is selected AND Docker is up
-        has_selection = dialog.listNodes.currentRow() >= 0
-        dialog.btnBootNode.setEnabled(has_selection and docker_status.available)
+    # -- Boot helper (runs in background thread) -----------------------
 
-    def _on_boot_clicked():
-        row = dialog.listNodes.currentRow()
-        if 0 <= row < len(node_ids):
-            success = on_select(node_ids[row])
+    def _start_boot(node_id, callback, cleanup_node_id=None):
+        """Launch boot in a QThread with an indeterminate progress bar."""
+        progress = QProgressDialog(
+            "Starting node (building image if needed)...",
+            None,  # no cancel button
+            0,
+            0,  # min=max=0 → indeterminate spinner
+            dialog,
+        )
+        progress.setWindowTitle("Booting Node")
+        progress.setMinimumDuration(0)
+        progress.show()
+
+        worker = _BootWorker(callback, node_id)
+
+        def _on_done(success):
+            progress.close()
             if success:
                 dialog.accept()
             else:
+                if cleanup_node_id:
+                    store.delete_node(cleanup_node_id)
                 QMessageBox.warning(
                     dialog,
                     "Boot Failed",
                     "Could not start the node. Check Docker status.",
                 )
 
+        worker.finished.connect(_on_done)
+        worker.start()
+        # prevent garbage collection while the thread is running
+        dialog._boot_worker = worker
+
+    # -- Signal handlers -----------------------------------------------
+
+    def _on_selection_changed():
+        has_selection = dialog.listNodes.currentRow() >= 0
+        dialog.btnBootNode.setEnabled(has_selection and docker_status.available)
+
+    def _on_boot_clicked():
+        row = dialog.listNodes.currentRow()
+        if 0 <= row < len(node_ids):
+            _start_boot(node_ids[row], on_select)
+
     def _on_create_clicked():
-        # Use the default values from RC_FIELDS to create a quick node
         rc_values = [
             store.RcFieldValue(name=f["name"], value=f["default"]) for f in RC_FIELDS
         ]
         name_field = next((f for f in rc_values if f.name == "node_name"), None)
         name = str(name_field.value) if name_field and name_field.value else ""
         node_id = store.create_node(name=name, rc_fields=rc_values)
-
-        success = on_create(node_id)
-        if success:
-            dialog.accept()
-        else:
-            # Clean up so this node doesn't show up next launch
-            store.delete_node(node_id)
-            QMessageBox.warning(
-                dialog,
-                "Boot Failed",
-                "Could not start the node. Check Docker status.",
-            )
+        _start_boot(node_id, on_create, cleanup_node_id=node_id)
 
     # Wire up Qt signals to our handler functions
     dialog.listNodes.currentRowChanged.connect(_on_selection_changed)
