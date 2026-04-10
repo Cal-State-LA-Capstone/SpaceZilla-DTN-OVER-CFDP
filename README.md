@@ -66,14 +66,9 @@ uv sync --only-dev
 ### Run the app
 
 ```bash
-python main.py
+uv run main.py
 ```
 
-Or equivalently:
-
-```bash
-python -m spacezilla
-```
 
 ### What happens
 
