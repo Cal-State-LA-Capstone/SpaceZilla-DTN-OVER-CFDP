@@ -178,7 +178,6 @@ SpaceZilla-DTN-OVER-CFDP/
 │   │   └── ... (dialog .ui files)
 │   └── test_frontend.py     — Legacy test harness
 ├── main.py                  — Entry point (thin launcher)
-├── __main__.py              — Enables `python -m spacezilla`
 ├── runtime_logger/
 │   ├── __init__.py          — Exports: setup_logging, get_logger
 │   └── logger.py            — Rotating file + console logging
