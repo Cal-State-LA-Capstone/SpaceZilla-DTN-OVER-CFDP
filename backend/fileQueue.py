@@ -1,8 +1,8 @@
 import os
 import threading
 import time
-import pyion
 
+import pyion
 
 # used to keep track of files in the queue
 counter = 0
@@ -76,7 +76,7 @@ def queueFile(filePath):
 
 
 # uses the queueId to remove a file from the queue before its sent
-#can be tweaked so that it removes the cancelled 
+#can be tweaked so that it removes the cancelled
 #file from the queue completely
 #def removeFile(queueId):
  #   with queueLock:
@@ -101,7 +101,7 @@ def sendFiles(onChange):
     sendThread.start()
 
 #Our own implementation of suspend/cancel/resume that will
-#work on the queued files. Any file that has 
+#work on the queued files. Any file that has
 #already started sending will not be affected
 
 def suspend(queueId):
@@ -209,7 +209,7 @@ def processQueue():
             entity.cfdp_send(
                 source_file=path, dest_file=f"/SZ_received_files/{filename}"
             )
-            print(f"send done,waiting to end")
+            print("send done,waiting to end")
             success = entity.wait_for_transaction_end()
             print(f"transaction end: {success}")
             time.sleep(3)
