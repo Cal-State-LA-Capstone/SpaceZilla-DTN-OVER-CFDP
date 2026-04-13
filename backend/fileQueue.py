@@ -38,7 +38,6 @@ pauseEvent = threading.Event()
 pauseEvent.set()
 
 
-
 # Increments counter by 1 for everyy new file added to the queue
 def nextId():
     global counter
@@ -76,17 +75,18 @@ def queueFile(filePath):
 
 
 # uses the queueId to remove a file from the queue before its sent
-#can be tweaked so that it removes the cancelled
-#file from the queue completely
-#def removeFile(queueId):
- #   with queueLock:
-  #      for i, item in enumerate(queue):
-   #         if item["id"] == queueId:
-    #            if item["status"] == "Running":
-     #               return False
-      #          queue.pop(i)
-       #         return True
-    #return False
+# can be tweaked so that it removes the cancelled
+# file from the queue completely
+# def removeFile(queueId):
+#   with queueLock:
+#      for i, item in enumerate(queue):
+#         if item["id"] == queueId:
+#            if item["status"] == "Running":
+#               return False
+#          queue.pop(i)
+#         return True
+# return False
+
 
 # uses background thread to send the files.
 # Stores 'onChange' so we can get status updates.
@@ -100,9 +100,11 @@ def sendFiles(onChange):
     sendThread = threading.Thread(target=processQueue, daemon=True)
     sendThread.start()
 
-#Our own implementation of suspend/cancel/resume that will
-#work on the queued files. Any file that has
-#already started sending will not be affected
+
+# Our own implementation of suspend/cancel/resume that will
+# work on the queued files. Any file that has
+# already started sending will not be affected
+
 
 def suspend(queueId):
     with queueLock:
@@ -112,6 +114,7 @@ def suspend(queueId):
     print(f"File {queueId} suspended.")
     return 0
 
+
 def cancel(queueId):
     with queueLock:
         for item in queue:
@@ -120,6 +123,7 @@ def cancel(queueId):
     pauseEvent.set()
     print(f"File {queueId} cancelled.")
     return 0
+
 
 def resume(queueId):
     global sendThread
@@ -132,6 +136,7 @@ def resume(queueId):
         sendThread.start()
     print(f"File {queueId} resumed.")
     return 0
+
 
 ##################
 
@@ -182,14 +187,14 @@ def processQueue():
     global activeId
     print("Testing process queueu")
     while True:
-        #sleep if paused
+        # sleep if paused
         pauseEvent.wait()
         with queueLock:
             nextItem = next(
                 (item.copy() for item in queue if item["status"] == "Queued"), None
             )
 
-        print("next Item: ",nextItem)
+        print("next Item: ", nextItem)
         print("queue: ", queue)
         if nextItem is None:
             break
@@ -215,9 +220,9 @@ def processQueue():
             time.sleep(3)
 
             if success:
-                updateStatus(queueId,"Completed")
+                updateStatus(queueId, "Completed")
             else:
-                updateStatus(queueId,"Failed")
+                updateStatus(queueId, "Failed")
 
         except Exception as e:
             print(f"Couldn't send {filename}: {e}")
