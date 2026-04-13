@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 
 import pyion
 
@@ -32,6 +33,10 @@ activeId = None
 # used so active_id doesn't crash
 activeLock = threading.Lock()
 
+paused = False
+pauseEvent = threading.Event()
+pauseEvent.set()
+
 
 # Increments counter by 1 for everyy new file added to the queue
 def nextId():
@@ -43,6 +48,7 @@ def nextId():
 # This sets up the connection between nodes
 def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
     global proxy, bpProxy, endpoint, entity
+    os.makedirs("/app/SZ_received_files", exist_ok=True)
     proxy = pyion.get_cfdp_proxy(nodeNumber)
     bpProxy = pyion.get_bp_proxy(nodeNumber)
     endpoint = bpProxy.bp_open(bpEndpoint)
@@ -69,28 +75,17 @@ def queueFile(filePath):
 
 
 # uses the queueId to remove a file from the queue before its sent
-def removeFile(queueId):
-    with queueLock:
-        for i, item in enumerate(queue):
-            if item["id"] == queueId:
-                if item["status"] == "Running":
-                    return False
-                queue.pop(i)
-                return True
-    return False
-
-
-# clears the queue based on the status of each file
-def clearQueue():
-    with queueLock:
-        removable = {"Queued", "Failed", "Canceled"}
-        queue[:] = [item for item in queue if item["status"] not in removable]
-
-
-# copys the queue
-def getQueue():
-    with queueLock:
-        return [item.copy() for item in queue]
+# can be tweaked so that it removes the cancelled
+# file from the queue completely
+# def removeFile(queueId):
+#   with queueLock:
+#      for i, item in enumerate(queue):
+#         if item["id"] == queueId:
+#            if item["status"] == "Running":
+#               return False
+#          queue.pop(i)
+#         return True
+# return False
 
 
 # uses background thread to send the files.
@@ -98,6 +93,7 @@ def getQueue():
 # also checks for other threads.
 def sendFiles(onChange):
     global sendThread, statusChange
+    print("entity in sendFiles:", entity)
     if sendThread and sendThread.is_alive():
         return
     statusChange = onChange
@@ -105,38 +101,41 @@ def sendFiles(onChange):
     sendThread.start()
 
 
-# suspend doesnt work because the files send too fast
-def suspend():
-    if entity:
-        return entity.cfdp_suspend()
-    return 0
+# Our own implementation of suspend/cancel/resume that will
+# work on the queued files. Any file that has
+# already started sending will not be affected
 
 
-#
-def cancel():
-    if entity:
-        return entity.cfdp_cancel()
-    return 0
-
-
-# doesnt work yet
-def resume():
-    if entity:
-        return entity.cfdp_resume()
-    return 0
-
-
-# returns the current transfer status as a string.
-# It looks for the active file to get the file status
-def statusIndicator():
-    with activeLock:
-        if activeId is None:
-            return "idle"
+def suspend(queueId):
     with queueLock:
-        item = getItemById(activeId)
-        if item:
-            return item["status"]
-    return "idle"
+        item = getItemById(queueId)
+        if item and item["status"] == "Queued":
+            item["status"] = "Suspended"
+    print(f"File {queueId} suspended.")
+    return 0
+
+
+def cancel(queueId):
+    with queueLock:
+        for item in queue:
+            if item["id"] == queueId and item["status"] == "Queued":
+                item["status"] = "Cancelled"
+    pauseEvent.set()
+    print(f"File {queueId} cancelled.")
+    return 0
+
+
+def resume(queueId):
+    global sendThread
+    with queueLock:
+        item = getItemById(queueId)
+        if item and item["status"] == "Suspended":
+            item["status"] = "Queued"
+    if sendThread is None or not sendThread.is_alive():
+        sendThread = threading.Thread(target=processQueue, daemon=True)
+        sendThread.start()
+    print(f"File {queueId} resumed.")
+    return 0
 
 
 ##################
@@ -186,13 +185,17 @@ def makeEvent(queueId):
 # This will keep going until the queue is empty.
 def processQueue():
     global activeId
-
+    print("Testing process queueu")
     while True:
+        # sleep if paused
+        pauseEvent.wait()
         with queueLock:
             nextItem = next(
                 (item.copy() for item in queue if item["status"] == "Queued"), None
             )
 
+        print("next Item: ", nextItem)
+        print("queue: ", queue)
         if nextItem is None:
             break
 
@@ -205,13 +208,20 @@ def processQueue():
         updateStatus(queueId, "Running")
 
         try:
+            print(f"event handler for: ,{filename}")
             entity.register_event_handler("CFDP_ALL_EVENTS", makeEvent(queueId))
+            print(f"cfdp_send for {path}")
             entity.cfdp_send(
                 source_file=path, dest_file=f"/SZ_received_files/{filename}"
             )
+            print("send done,waiting to end")
             success = entity.wait_for_transaction_end()
+            print(f"transaction end: {success}")
+            time.sleep(3)
 
-            if not success:
+            if success:
+                updateStatus(queueId, "Completed")
+            else:
                 updateStatus(queueId, "Failed")
 
         except Exception as e:
