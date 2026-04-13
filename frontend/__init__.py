@@ -1,8 +1,7 @@
-"""frontend — GUI facade for the SpaceZilla controller.
+"""High-level GUI entry points for the controller.
 
-Provides high-level functions the controller uses to display
-the Node Picker, boot the main window, and tear down the GUI.
-All Qt object creation happens behind this facade.
+The controller doesn't touch Qt directly — it calls these three
+functions instead: show_node_picker(), show_main_window(), teardown().
 """
 
 from __future__ import annotations
@@ -11,6 +10,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+# We track open windows here so teardown() can close them all
+_windows: list = []
 
 
 def show_node_picker(
@@ -26,7 +28,9 @@ def show_node_picker(
         on_create: Called with ``node_id`` when the user creates
             a new node via the form.
     """
-    raise NotImplementedError
+    from frontend.node_picker import open_node_picker
+
+    open_node_picker(on_select=on_select, on_create=on_create)
 
 
 def show_main_window(node_id: str, ipc_port: int) -> None:
@@ -36,9 +40,27 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
         node_id: The active node's identifier.
         ipc_port: The IPC server port for backend communication.
     """
-    raise NotImplementedError
+    import sys
+    from pathlib import Path
+
+    from PyQt6.QtWidgets import QApplication
+
+    # Add the SpaceZilla_ver0 folder to sys.path so its imports work
+    sz_dir = str(Path(__file__).parent / "SpaceZilla_ver0")
+    sys.path.insert(0, sz_dir)
+    from frontend.SpaceZilla_ver0.spacezilla_main import MainWindow
+
+    # Reuse an existing QApplication if one is running (e.g. from node picker)
+    QApplication.instance() or QApplication(sys.argv)
+    window = MainWindow()
+    window.node_id = node_id
+    window.ipc_port = ipc_port
+    window.show()
+    _windows.append(window)
 
 
 def teardown() -> None:
     """Close all windows and release Qt resources."""
-    raise NotImplementedError
+    for window in _windows:
+        window.close()
+    _windows.clear()
