@@ -221,3 +221,6 @@ logs/
 # Claude
 .claude/
 CLAUDE.md
+
+# ion.log
+ion.log
