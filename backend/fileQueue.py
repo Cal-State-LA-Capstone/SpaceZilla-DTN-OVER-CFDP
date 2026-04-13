@@ -101,7 +101,7 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
     bpProxy = pyion.get_bp_proxy(nodeNumber)
     endpoint = bpProxy.bp_open(bpEndpoint)
     entity = proxy.cfdp_open(entityId, endpoint)
-    
+
     def get_queue(self):
         """Return a shallow copy of the queue (safe to read outside the lock)."""
         with self.queue_lock:
@@ -137,7 +137,7 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
 #          queue.pop(i)
 #         return True
 # return False
-    
+
     def cancel(self):
         """Ask CFDP to cancel the current transfer."""
         if self.entity:
@@ -182,7 +182,7 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
 # uses background thread to send the files.
 # Stores 'onChange' so we can get status updates.
 # also checks for other threads.
-    
+
     def sendFiles(onChange):
         global sendThread, statusChange
         print("entity in sendFiles:", entity)
@@ -226,8 +226,8 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
                 item["status"] = "Suspended"
         print(f"File {queueId} suspended.")
         return 0
-    
-    
+
+
     def cancel(queueId):
         with queueLock:
             for item in queue:
@@ -236,8 +236,8 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
         pauseEvent.set()
         print(f"File {queueId} cancelled.")
         return 0
-    
-    
+
+
     def resume(queueId):
         global sendThread
         with queueLock:
@@ -291,17 +291,18 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
                 print(f"Couldn't send {filename}: {e}")
                 self._update_status(queue_id, "Failed")
 
-    # searches queue for a specific item in the queue by its ID. If we find it
-    # it seturns the dictionary for that ID. 'updateStatus' and statusIndicator' use this
+    # searches queue for a specific item in the queue by its ID. 
+    # If we find it it seturns the dictionary for that ID. 
+    # 'updateStatus' and statusIndicator' use this
     def getItemById(queueId):
         for item in queue:
             if item["id"] == queueId:
                 return item
         return None
-    
-    
+
+
     # updates the file status in the queue and chages the 'statusChange'  variable
-    
+
     def updateStatus(queueId, status):
         with queueLock:
             item = getItemById(queueId)
@@ -309,8 +310,8 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
                 item["status"] = status
         if statusChange:
             statusChange(queueId, status)
-    
-    
+
+
     # cfpd event handler thasts connected to a 'queueId'
     def makeEvent(queueId):
         def handler(event):
@@ -326,10 +327,10 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
                 updateStatus(queueId, "Queued")
             elif "RESUMED" in eventName:
                 updateStatus(queueId, "Running")
-    
+
         return handler
-    
-    
+
+
     # this is used for the send thread. It loops through queue looking for the next
     # file added to the queue. If it finds one it will change the status to 'Running'
     # and register the event handler and it will call 'cfdp_send'.
@@ -344,20 +345,20 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
                 nextItem = next(
                     (item.copy() for item in queue if item["status"] == "Queued"), None
                 )
-    
+
             print("next Item: ", nextItem)
             print("queue: ", queue)
             if nextItem is None:
                 break
-    
+
             queueId = nextItem["id"]
             path = nextItem["path"]
             filename = nextItem["fileName"]
-    
+
             with activeLock:
                 activeId = queueId
             updateStatus(queueId, "Running")
-    
+
             try:
                 print(f"event handler for: ,{filename}")
                 entity.register_event_handler("CFDP_ALL_EVENTS", makeEvent(queueId))
@@ -369,15 +370,15 @@ def fileQueue(nodeNumber: int, entityId: int, bpEndpoint: str):
                 success = entity.wait_for_transaction_end()
                 print(f"transaction end: {success}")
                 time.sleep(3)
-    
+
                 if success:
                     updateStatus(queueId, "Completed")
                 else:
                     updateStatus(queueId, "Failed")
-    
+
             except Exception as e:
                 print(f"Couldn't send {filename}: {e}")
                 updateStatus(queueId, "Failed")
-    
+
             with activeLock:
                 activeId = None
