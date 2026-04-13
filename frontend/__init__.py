@@ -43,7 +43,7 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
     import sys
     from pathlib import Path
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     # Add the SpaceZilla_ver0 folder to sys.path so its imports work
     sz_dir = str(Path(__file__).parent / "SpaceZilla_ver0")

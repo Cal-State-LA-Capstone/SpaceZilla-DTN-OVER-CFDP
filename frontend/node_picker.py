@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import store
-from PyQt6 import uic
-from PyQt6.QtWidgets import QApplication, QDialog
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import QApplication
 from store.models import DockerStatus, NodeMeta
 from store.rc_fields import RC_FIELDS
 
@@ -52,7 +52,13 @@ def open_node_picker(
 
     # Load the dialog layout from the .ui file created in Qt Designer
     ui_path = Path(__file__).parent / "NodePickerDialog.ui"
-    dialog: QDialog = uic.loadUi(str(ui_path))
+    loader = QUiLoader()
+    from PySide6.QtCore import QFile
+
+    ui_file = QFile(str(ui_path))
+    ui_file.open(QFile.ReadOnly)
+    dialog = loader.load(ui_file)
+    ui_file.close()
 
     # Populate the list widget with every saved node
     nodes = load_node_list()
