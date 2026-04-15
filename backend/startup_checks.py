@@ -7,6 +7,7 @@ def check_pyion() -> tuple[bool, str]:
     """
     try:
         import pyion  # noqa: F401
+
         return True, "pyion is available."
     except Exception as e:
         return False, f"pyion import failed: {e}"
