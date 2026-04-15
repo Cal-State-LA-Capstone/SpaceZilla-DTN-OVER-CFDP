@@ -3,10 +3,9 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel, QLayout, QHBoxLayout
 from PySide6.QtWidgets import QFileSystemModel, QTreeView, QTreeWidget, QTreeWidgetItem
 from PySide6.QtWidgets import QScrollArea, QListWidget, QListWidgetItem
 from PySide6.QtCore import QDir                            
-from PySide6.QtGui import QAction, QPalette, QColor
+from PySide6.QtGui import QAction, QPalette, QColor, QIcon, QBrush, QPixmap
 from PySide6.QtCore import Qt, QFile
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHeaderView
 import subprocess
 import os
@@ -209,16 +208,47 @@ class MainWindow:
 
     # Open Theme Window
     def theme(self):
-        self.theme_window = load_ui("Theme_ver0.ui")
-        self.theme_window.setWindowTitle("Themes")
-        self.theme_window.show()
+        dialog = QDialog(self.window)
+        ui_dialog = Ui_Theme()
+        ui_dialog.setupUi(dialog)
+        dialog.setWindowTitle("Theme Settings")
+        dialog.setModal(True)
+
+        # Populate accent combo box and preview current accent inside the dialog
+        ui_dialog.accentBox.addItems(self.accent_colors)
+        ui_dialog.accentBox.setCurrentText(self.selected_accent)
+        ui_dialog.accentBox.currentTextChanged.connect(
+            lambda color: self.updateAccentColor(color, dialog)
+        )
+
+        ui_dialog.selectBackgroundPicture.clicked.connect(
+            lambda: self.selectBackgroundPicture(dialog)
+        )
+        ui_dialog.removeBackgroundPicture.clicked.connect(
+            lambda: self.removeBackgroundImage(dialog)
+        )
+        ui_dialog.applyTheme.clicked.connect(
+            lambda: self.applyThemeSettings(ui_dialog, dialog)
+        )
+
+        self.updateAccentColor(self.selected_accent, dialog)
+
+        dialog.exec()
 
     #Toolbar
     #Open File Log
     def fileLog(self):
-        self.fileLog_window = load_ui("File_Log_ver0.ui")
-        self.fileLog_window.setWindowTitle("File Log")
-        self.fileLog_window.show()
+        dialog= QDialog(self.window)
+        ui_dialog = Ui_file_log()
+        ui_dialog.setupUi(dialog)
+        dialog.setWindowTitle("File Log")
+        dialog.setModal(True)
+
+        
+
+        #self.update_file_log(ui_dialog)
+
+        dialog.exec()
 
     #Open Recently Sent
     def recentlySent(self):
@@ -505,7 +535,99 @@ class MainWindow:
     def select_contact(self, address):
         self.destination_filter.setText(address)
         self.selected_destination = address
-    
+    #THEME SETTINGS
+    # Apply background theme
+    def selectBackgroundPicture(self, dialog):
+        from PySide6.QtWidgets import QFileDialog
+        file_path, _ = QFileDialog.getOpenFileName(dialog, "Select Background Image", "", "Images (*.png *.jpg *.jpeg *.bmp *.gif)")
+        if file_path:
+            self.bg_image_path = file_path
+
+    # Delete background theme
+    def removeBackgroundImage(self, dialog):
+        self.bg_image_path = None
+
+    #Applys accent colors to hovering and buttons
+    def buildMainStyleSheet(self) -> str:
+        accent_color = self.getAccentColor(self.selected_accent)
+        accent = accent_color.name()
+        return (
+            f"QPushButton, QToolButton {{ background-color: {accent}; color: white; }}\n"
+            + f"QToolButton#TOOLBAR, QToolButton#SETTINGS, QToolButton#TERMINAL {{ background-color: {accent}; color: white; }}\n"
+            + f"QMenu {{ background-color: white; color: black; }}\n"
+            + f"QMenu::item:selected {{ background-color: {accent}; color: white; }}\n"
+            + f"QComboBox QAbstractItemView::item:selected {{ background-color: {accent}; color: white; }}\n"
+            + f"QComboBox::drop-down {{ background-color: {accent}; }}"
+        )
+
+    # Update accent color preview in theme dialog
+    def updateAccentColor(self, accent_name: str, dialog=None):
+        self.selected_accent = accent_name
+        accent_color = self.getAccentColor(self.selected_accent)
+        if dialog is not None:
+            apply_button = dialog.findChild(QWidget, "applyTheme")
+            if apply_button is not None:
+                apply_button.setStyleSheet(
+                    f"background-color: {accent_color.name()}; color: white;"
+                )
+            accent_combo = dialog.findChild(QWidget, "accentBox")
+            if accent_combo is not None:
+                accent_combo.setStyleSheet(
+                    "QComboBox QAbstractItemView::item:selected {"
+                    f"background-color: {accent_color.name()}; color: white;"
+                    "}"
+                )
+
+    # Apply in the theme dialog
+    def applyThemeSettings(self, ui_dialog, dialog):
+        self.selected_accent = ui_dialog.accentBox.currentText()
+        self.applyAccentStyle()
+        self.applyBackgroundImage()
+        dialog.accept()
+
+    # Apply accent color to the entire app
+    def applyAccentStyle(self):
+        self.window.setStyleSheet(self.buildMainStyleSheet())
+
+    # Apply background image to the entire app
+    def applyBackgroundImage(self):
+        if self.bg_image_path:
+            palette = self.window.palette()
+            pixmap = QPixmap(self.bg_image_path)
+            if not pixmap.isNull():
+                scaled = pixmap.scaled(
+                    self.window.size(),
+                    Qt.KeepAspectRatioByExpanding,
+                    Qt.SmoothTransformation,
+                )
+                palette.setBrush(QPalette.Window, QBrush(scaled))
+                self.window.setPalette(palette)
+            else:
+                self.window.setPalette(QApplication.instance().palette())
+        else:
+            self.window.setPalette(QApplication.instance().palette())
+        self.window.update()
+        QApplication.instance().processEvents()
+
+    #Scales background image to main window
+    def on_main_resize(self, event):
+        if self.bg_image_path:
+            self.applyBackgroundImage()
+        self._original_resize_event(event)
+
+    # Creates accent colors
+    def getAccentColor(self, accent_name: str) -> QColor:
+        """Return a QColor for the selected accent name."""
+        colors = {
+            "Orange": QColor(199,110,0),
+            "Light Blue": QColor(0, 120, 215),
+            "Yellow": QColor(230, 180, 0),
+            "Green": QColor(0, 170, 80),
+            "Gray": QColor(128, 128, 128),
+            "Red": QColor(200, 40, 40),
+        }
+        return colors.get(accent_name, QColor(0, 120, 215))
+
 if __name__ == "__main__":
     app = QApplication([])
     main = MainWindow()
