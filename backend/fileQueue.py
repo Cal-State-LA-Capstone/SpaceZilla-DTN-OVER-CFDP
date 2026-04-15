@@ -196,9 +196,7 @@ class FileQueue:
                 item["status"] = "Queued"
 
         if self.send_thread is None or not self.send_thread.is_alive():
-            self.send_thread = threading.Thread(
-                target=self._process_queue, daemon=True
-            )
+            self.send_thread = threading.Thread(target=self._process_queue, daemon=True)
             self.send_thread.start()
 
         print(f"File {queue_id} resumed.")
