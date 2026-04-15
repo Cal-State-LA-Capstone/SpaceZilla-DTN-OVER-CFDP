@@ -101,6 +101,8 @@ class Controller:
             self._container_id = backend.start_container(self._config)
             logger.info("Container started: %s", self._container_id)
 
+            logger.info("Capturing ion.log")
+            backend.start_ion_logger(self._container_id)
             self._start_ipc_server()
 
             # Uvicorn binds the socket in its thread — wait for the port
