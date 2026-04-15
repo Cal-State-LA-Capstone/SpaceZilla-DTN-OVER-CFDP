@@ -7,6 +7,10 @@ from PySide6.QtGui import QAction, QPalette, QColor, QIcon, QBrush, QPixmap
 from PySide6.QtCore import Qt, QFile
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QHeaderView
+
+from theme_ver1_generated import Ui_Theme
+from file_log_ver1_generated import Ui_file_log
+
 import subprocess
 import os
 
