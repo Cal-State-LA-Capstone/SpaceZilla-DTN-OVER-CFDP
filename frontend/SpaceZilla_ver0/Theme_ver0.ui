@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>winThemes</class>
- <widget class="QMainWindow" name="winThemes">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>259</width>
+    <width>192</width>
     <height>208</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="btnTheme1">
+   <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -27,7 +27,7 @@
      <string>THEME 01</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnTheme3">
+   <widget class="QPushButton" name="pushButton_2">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -40,7 +40,7 @@
      <string>THEME 03</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnTheme2">
+   <widget class="QPushButton" name="pushButton_3">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -59,8 +59,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>259</width>
-     <height>24</height>
+     <width>192</width>
+     <height>23</height>
     </rect>
    </property>
   </widget>

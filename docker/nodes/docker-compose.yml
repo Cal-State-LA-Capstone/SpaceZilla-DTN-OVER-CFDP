@@ -1,0 +1,45 @@
+networks:
+  ion_network:
+    driver: bridge
+
+services:
+
+  node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node1
+    hostname: node1
+    networks:
+      - ion_network
+    volumes:
+      - ./configs:/configs
+      - ./cfdp:/cfdp
+      - ./app:/app
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "ionstart -I /configs/node1.rc &&
+               sleep 5 &&
+               cfdpadmin /cfdp/node1.cfdprc &&
+               tail -f /dev/null"
+
+  node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node2
+    hostname: node2
+    networks:
+      - ion_network
+    volumes:
+      - ./configs:/configs
+      - ./cfdp:/cfdp
+      - ./app:/app
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "ionstart -I /configs/node2.rc &&
+               sleep 5 &&
+               cfdpadmin /cfdp/node2.cfdprc &&
+               tail -f /dev/null"
