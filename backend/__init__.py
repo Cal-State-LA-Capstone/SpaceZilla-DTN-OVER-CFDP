@@ -10,6 +10,7 @@ from __future__ import annotations
 import platform
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -246,3 +247,20 @@ def check_docker() -> DockerStatus:
         reason="daemon_down",
         message="Docker daemon is not running.",
     )
+
+
+def start_ion_logger(container_id: str) -> None:
+    """Runs 'docker exec container_id tail -f in seperate thread forever!"""
+    ion_logger = get_logger("ion-log")
+
+    def _capture():
+        process = subprocess.Popen(
+            ["docker", "exec", container_id, "tail", "-f", "/home/ion.log"],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        for line in process.stdout:
+            ion_logger.info(line.strip())
+
+    thread = threading.Thread(target=_capture, daemon=True)
+    thread.start()
