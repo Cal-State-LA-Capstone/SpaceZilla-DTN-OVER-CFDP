@@ -35,6 +35,7 @@ def load_ui(ui_file):
 class MainWindow:
     def __init__(self):
         self.window = load_ui("SpaceZilla_ver0.ui")
+        self.window.setWindowIcon(QIcon("icons/SpaceZillaLogo.png"))
         self.window.setWindowTitle("SpaceZilla")
 
         print("SETTING UP FILE EXPLORER")
@@ -295,6 +296,18 @@ class MainWindow:
 
 if __name__ == "__main__":
     app = QApplication([])
+    app.setApplicationName("SpaceZilla")
+    app.setApplicationDisplayName("SpaceZilla")
+    app.setDesktopFileName("SpaceZilla")
+
+    print(os.path.exists("icons/SpaceZillaLogo.png"))
+
+#    app.setWindowIcon(QIcon("icons/SpaceZillaLogo.png"))
+
+    icon = QIcon("icons/SpaceZillaLogo.png")
+    print("Icon is null:", icon.isNull())
+    app.setWindowIcon(icon)
+
     main = MainWindow()
     main.show()
     app.exec()
