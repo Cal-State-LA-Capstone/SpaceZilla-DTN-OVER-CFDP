@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import platform
 import subprocess
-import threading
 import tempfile
+import threading
 import time
 from pathlib import Path
 
