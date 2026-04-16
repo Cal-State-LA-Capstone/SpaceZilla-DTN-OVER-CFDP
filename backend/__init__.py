@@ -248,6 +248,7 @@ def check_docker() -> DockerStatus:
         message="Docker daemon is not running.",
     )
 
+
 def start_ion_logger(container_id: str) -> None:
     """Runs 'docker exec container_id tail -f in seperate thread forever!"""
     ion_logger = get_logger("ion-log")
