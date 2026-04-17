@@ -51,6 +51,7 @@ _DOCKERFILE = (
 # Image Build
 # -----------------------------
 
+
 def build_image(*, force: bool = False) -> None:
     """
     Build the ION Docker image if it does not already exist.
@@ -98,6 +99,7 @@ def build_image(*, force: bool = False) -> None:
 # -----------------------------
 # Container Lifecycle
 # -----------------------------
+
 
 def start_container(config: NodeConfig) -> str:
     """
@@ -196,6 +198,7 @@ def container_running(container_id: str) -> bool:
 # -----------------------------
 # Docker Startup Helpers
 # -----------------------------
+
 
 def _find_linux_docker_start_cmd() -> list[str] | None:
     """
