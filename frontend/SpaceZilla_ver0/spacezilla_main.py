@@ -300,7 +300,7 @@ if __name__ == "__main__":
     app.setApplicationDisplayName("SpaceZilla")
     app.setDesktopFileName("SpaceZilla")
 
-#    app.setWindowIcon(QIcon("icons/SpaceZillaLogo.png"))
+    #    app.setWindowIcon(QIcon("icons/SpaceZillaLogo.png"))
 
     icon = QIcon("icons/SpaceZillaLogo.png")
     app.setWindowIcon(icon)
