@@ -10,7 +10,6 @@
 from backend.backend_facade import BackendFacade
 from frontend.test_controller import TestController
 from frontend.test_ui import TestUI
-from frontend.SpaceZilla_ver0.spacezilla_main import MainWindow
 
 
 def main():
