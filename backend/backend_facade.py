@@ -54,18 +54,6 @@ class BackendFacade:
     def send_files(self, on_change=None) -> tuple[bool, str]:
         return self.transfer_backend.send_files(on_change=on_change)
 
-    # suspends the current transfer
-    def suspend(self) -> tuple[bool, str]:
-        return self.transfer_backend.suspend()
-
-    # cancels the current transfer
-    def cancel(self) -> tuple[bool, str]:
-        return self.transfer_backend.cancel()
-
-    # resumes the current transfer
-    def resume(self) -> tuple[bool, str]:
-        return self.transfer_backend.resume()
-
     # returns a simple text indicator for the currently active transfer
     def status_indicator(self) -> str:
         return self.transfer_backend.status_indicator()
