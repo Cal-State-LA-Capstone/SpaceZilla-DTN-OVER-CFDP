@@ -27,3 +27,23 @@ Inside this folder, you will find 4 things:
 This will either open up a window, or tell you what errors it encountered while trying to open the file in your terminal.
 
 Note: the terminal window just. Opens. At the moment. I do not know if it connects(?), check that if you guys can.
+-------------------------------------------
+Optional Ubuntu launcher support
+
+SpaceZilla can still be run normally with:
+    python spacezilla_main.py
+
+An optional Ubuntu desktop launcher is included for app search, dock icon, and Alt+Tab integration.
+
+Launcher related files:
+    icons/SpaceZillaLogo.png
+    run_spacezilla.sh
+    linux/spacezilla.desktop
+
+To install the launcher locally on Ubuntu:
+
+    mkdir -p ~/.local/share/applications
+    cp ~/SpaceZilla-DTN-OVER-CFDP/frontend/SpaceZilla_ver0/linux/spacezilla.desktop ~/.local/share/applications/
+    update-desktop-database ~/.local/share/applications
+
+After that, search for "SpaceZilla" in Ubuntu and launch it from the app menu.

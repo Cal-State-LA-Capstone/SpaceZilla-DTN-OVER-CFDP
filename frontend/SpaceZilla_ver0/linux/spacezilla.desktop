@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SpaceZilla
+Comment=SpaceZilla CFDP over DTN frontend
+Exec=/home/vboxuser/SpaceZilla-DTN-OVER-CFDP/frontend/SpaceZilla_ver0/run_spacezilla.sh
+Icon=/home/vboxuser/SpaceZilla-DTN-OVER-CFDP/frontend/SpaceZilla_ver0/icons/SpaceZillaLogo.png
+Terminal=false
+Categories=Utility;Development
+StartupNotify=true
+StartupWMClass=spacezilla
