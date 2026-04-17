@@ -249,9 +249,11 @@ class TransferBackend:
                 if not ok:
                     self._update_status(queue_id, "Failed")
                 else:
-                    ok, msg = self.adapter.wait_for_transaction_end()
+                    ok, msg = self.adapter.wait_for_transaction_end(timeout=10)
 
-                    if not ok and self.status_indicator() != "Canceled":
+                    if ok:
+                        self._update_status(queue_id, "Completed")
+                    elif self.status_indicator() != "Canceled":
                         self._update_status(queue_id, "Failed")
 
             except Exception as e:
@@ -260,3 +262,6 @@ class TransferBackend:
 
             with self.active_lock:
                 self.active_id = None
+
+        # clear thread reference when processing is done
+        self.send_thread = None
