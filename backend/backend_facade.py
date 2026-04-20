@@ -57,3 +57,7 @@ class BackendFacade:
     # returns a simple text indicator for the currently active transfer
     def status_indicator(self) -> str:
         return self.transfer_backend.status_indicator()
+    
+    #for parsing ionlog
+    def set_parser(self, parser) -> None:
+        self.transfer_backend.set_parser(parser)
