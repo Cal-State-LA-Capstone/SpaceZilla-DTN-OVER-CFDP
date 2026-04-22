@@ -1,15 +1,11 @@
 import os
 import subprocess
-#from tkinter import dialog
-#Add to mainwindow this will open the dialog windows
-from theme_ver1_generated import Ui_Theme
-from file_log_ver1_generated import Ui_file_log
-from recent_Sent_ver1_generated import Ui_Recently_Sent
-from version_and_Hotkeys_ver1_generated import Ui_Version_and_Hotkeys
 
-#Add to mainwindow QBrush, QPixmap, QPalette, QColor
+from file_log_ver1_generated import Ui_file_log
+
+# Add to mainwindow QBrush, QPixmap, QPalette, QColor
 from PySide6.QtCore import QDir, QFile, Qt
-from PySide6.QtGui import QAction, QColor, QBrush, QIcon, QPalette, QPixmap
+from PySide6.QtGui import QAction, QBrush, QColor, QIcon, QPalette, QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
@@ -26,6 +22,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from recent_Sent_ver1_generated import Ui_Recently_Sent
+
+# from tkinter import dialog
+# Add to mainwindow this will open the dialog windows
+from theme_ver1_generated import Ui_Theme
+from version_and_Hotkeys_ver1_generated import Ui_Version_and_Hotkeys
 
 loader = QUiLoader()
 
@@ -89,7 +91,8 @@ class MainWindow:
         self.dark_mode = False
         self.bg_image_path = None
 
-        #Add to the mainwindow to give the colors we are suing *Note: We can add more colors if we like to and name them here to appear on the combo box*
+        # Add to the mainwindow to give the colors we are using
+        # *Note: We can add more colors and name them here to appear on the combo box*
         # Theme settings
         self.selected_accent = "Orange"
         self.accent_colors = ["Orange", "Light Blue", "Yellow", "Green", "Gray", "Red"]
@@ -214,7 +217,8 @@ class MainWindow:
         self.applyAccentStyle()
         self.applyBackgroundImage()
 
-    #Add to mainwindow this opens the version and hotkeys dialog when you click on it in the settings menu
+    # Add to mainwindow: opens the version and hotkeys dialog
+    # when you click on it in the settings menu
     # Open Version Window
     def versionHotkeys(self):
         dialog = QDialog(self.window)
@@ -224,7 +228,8 @@ class MainWindow:
         dialog.setModal(True)
         dialog.exec()
 
-    #Add this to mainwindow to open the theme dialog when you click on it in the settings menu
+    # Add this to mainwindow to open the theme dialog
+    # when you click on it in the settings menu
     # Open Theme Window
     def showThemeDialog(self):
         dialog = QDialog(self.window)
@@ -253,27 +258,27 @@ class MainWindow:
         self.updateAccentColor(self.selected_accent, dialog)
 
         dialog.exec()
-        
-    #Add to mainwindow to open the file log dialog when you click on it in the toolbar menu
+
+    # Add to mainwindow to open the file log dialog
+    # when you click on it in the toolbar menu
     # Toolbar
     # Open File Log
     def fileLog(self):
-        dialog= QDialog(self.window)
+        dialog = QDialog(self.window)
         ui_dialog = Ui_file_log()
         ui_dialog.setupUi(dialog)
         dialog.setWindowTitle("File Log")
         dialog.setModal(True)
 
-        
-
-        #self.update_file_log(ui_dialog)
+        # self.update_file_log(ui_dialog)
 
         dialog.exec()
 
-    #Add to mainwindow to open the recently sent dialog when you click on it in the toolbar menu
+    # Add to mainwindow to open the recently sent dialog
+    # when you click on it in the toolbar menu
     # Open Recently Sent
     def recentlySent(self):
-        dialog= QDialog(self.window)
+        dialog = QDialog(self.window)
         ui_dialog = Ui_Recently_Sent()
         ui_dialog.setupUi(dialog)
         dialog.setWindowTitle("Recently Sent")
@@ -356,12 +361,19 @@ class MainWindow:
             else:
                 item["widget"].setVisible(False)
 
-    #Everything below this should be added since it is to the themes dialog and the function for the background pictures and accent colors
-    #THEME SETTINGS
+    # Everything below this should be added since it is to the themes dialog
+    # and the function for the background pictures and accent colors
+    # THEME SETTINGS
     # Apply background theme
     def selectBackgroundPicture(self, dialog):
         from PySide6.QtWidgets import QFileDialog
-        file_path, _ = QFileDialog.getOpenFileName(dialog, "Select Background Image", "", "Images (*.png *.jpg *.jpeg *.bmp *.gif)")
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            dialog,
+            "Select Background Image",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp *.gif)",
+        )
         if file_path:
             self.bg_image_path = file_path
 
@@ -369,21 +381,35 @@ class MainWindow:
     def removeBackgroundImage(self, dialog):
         self.bg_image_path = None
 
-    #Applys accent colors to hovering and buttons
+    # Applys accent colors to hovering and buttons
     def buildMainStyleSheet(self) -> str:
         accent_color = self.getAccentColor(self.selected_accent)
         accent = accent_color.name()
         return (
-            f"QPushButton, QToolButton {{ background-color: {accent}; color: white; }}\n"
-            + f"QToolButton#TOOLBAR, QToolButton#SETTINGS, QToolButton#TERMINAL {{ background-color: {accent}; color: white; }}\n"
-            + f"QMenu {{ background-color: white; color: black; }}\n"
+            f"QPushButton, QToolButton"
+            f" {{ background-color: {accent}; color: white; }}\n"
+            + (
+                "QToolButton#TOOLBAR, QToolButton#SETTINGS,"
+                " QToolButton#TERMINAL"
+                f" {{ background-color: {accent}; color: white; }}\n"
+            )
+            + "QMenu { background-color: white; color: black; }\n"
             + f"QMenu::item:selected {{ background-color: {accent}; color: white; }}\n"
-            + f"QComboBox {{ background-color: {accent}; color: black; border: 1px solid {accent}; }}\n"
-            + f"QComboBox QAbstractItemView {{ background-color: white; color: black; }}\n"
-            + f"QComboBox QAbstractItemView::item:selected {{ background-color: {accent}; color: white; }}\n"
-            #+ f"QComboBox::drop-down {{ background-color: {accent}; }}\n"
-            + f"QTreeView {{ alternate-background-color: white; }}\n"
-            + f"QTreeView::item:selected {{ background-color: {accent}; color: white; }}\n"
+            + (
+                f"QComboBox {{ background-color: {accent};"
+                f" color: black; border: 1px solid {accent}; }}\n"
+            )
+            + "QComboBox QAbstractItemView { background-color: white; color: black; }\n"
+            + (
+                "QComboBox QAbstractItemView::item:selected"
+                f" {{ background-color: {accent}; color: white; }}\n"
+            )
+            # + f"QComboBox::drop-down {{ background-color: {accent}; }}\n"
+            + "QTreeView { alternate-background-color: white; }\n"
+            + (
+                f"QTreeView::item:selected"
+                f" {{ background-color: {accent}; color: white; }}\n"
+            )
             + f"QTreeView::item:hover {{ background-color: {accent}; color: white; }}"
         )
 
@@ -436,7 +462,7 @@ class MainWindow:
         self.window.update()
         QApplication.instance().processEvents()
 
-    #Scales background image to main window
+    # Scales background image to main window
     def on_main_resize(self, event):
         if self.bg_image_path:
             self.applyBackgroundImage()
@@ -446,7 +472,7 @@ class MainWindow:
     def getAccentColor(self, accent_name: str) -> QColor:
         """Return a QColor for the selected accent name."""
         colors = {
-            "Orange": QColor(199,110,0),
+            "Orange": QColor(199, 110, 0),
             "Light Blue": QColor(0, 120, 215),
             "Yellow": QColor(230, 180, 0),
             "Green": QColor(0, 170, 80),
@@ -454,7 +480,9 @@ class MainWindow:
             "Red": QColor(200, 40, 40),
         }
         return colors.get(accent_name, QColor(0, 120, 215))
-    #End point for the theme dialog
+
+    # End point for the theme dialog
+
 
 if __name__ == "__main__":
     app = QApplication([])

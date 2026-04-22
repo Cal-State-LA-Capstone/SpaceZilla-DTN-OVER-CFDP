@@ -1,20 +1,32 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QMenu, QToolButton, QPushButton, QLineEdit, QDialogButtonBox
-from PySide6.QtWidgets import QVBoxLayout, QWidget, QLabel, QLayout, QHBoxLayout, QDialog
-from PySide6.QtWidgets import QFileSystemModel, QTreeView, QTreeWidget, QTreeWidgetItem
-from PySide6.QtWidgets import QScrollArea, QListWidget, QListWidgetItem
-from PySide6.QtCore import QDir                            
-from PySide6.QtGui import QAction, QPalette, QColor, QIcon, QBrush, QPixmap
-from PySide6.QtCore import Qt, QFile
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QHeaderView
-
-from theme_ver1_generated import Ui_Theme
-from file_log_ver1_generated import Ui_file_log
-
-import subprocess
 import os
+import subprocess
+
+from file_log_ver1_generated import Ui_file_log
+from PySide6.QtCore import QDir, QFile, Qt
+from PySide6.QtGui import QAction, QBrush, QColor, QIcon, QPalette, QPixmap
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QFileSystemModel,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QPushButton,
+    QScrollArea,
+    QToolButton,
+    QTreeView,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+from theme_ver1_generated import Ui_Theme
 
 loader = QUiLoader()
+
 
 # Helper function to load UI
 def load_ui(ui_file):
@@ -29,11 +41,11 @@ class MainWindow:
     def __init__(self):
         self.window = load_ui("SpaceZilla_ver0.ui")
         self.window.setWindowTitle("SpaceZilla")
-        
+
         # File Explorer
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.rootPath())
-        
+
         # SOURCE - use a container widget to hold both tree and list
         self.source_container = QWidget()
         self.source_container_layout = QVBoxLayout(self.source_container)
@@ -42,9 +54,11 @@ class MainWindow:
         self.source_tree = QTreeView()
         self.source_tree.setModel(self.model)
         self.source_tree.setRootIndex(self.model.index(QDir.homePath()))
-        self.source_tree.header().setSectionResizeMode(0, self.source_tree.header().ResizeMode.Stretch)
+        self.source_tree.header().setSectionResizeMode(
+            0, self.source_tree.header().ResizeMode.Stretch
+        )
 
-        #SEARCH
+        # SEARCH
         self.search_list = QTreeWidget()
         self.search_list.setHeaderHidden(True)
         self.search_list.doubleClicked.connect(self.search_file_selected)
@@ -55,20 +69,22 @@ class MainWindow:
 
         source_area = self.window.findChild(QScrollArea, "SOURCE_DIRECT")
         source_area.setWidget(self.source_container)
-        
+
         # FILE SELECTION HANDLER
         self.source_tree.doubleClicked.connect(self.file_selected)
-        
+
         # FILE SELECTION DISPLAY
-        self.file_selected_display = self.window.findChild(QLineEdit, "file_selected_display")
-        
+        self.file_selected_display = self.window.findChild(
+            QLineEdit, "file_selected_display"
+        )
+
         # SEARCH BARS
         self.file_filter = self.window.findChild(QLineEdit, "file_filter")
         self.queue_filter = self.window.findChild(QLineEdit, "queue_filter")
 
         self.file_filter.textChanged.connect(self.filter_files)
         self.queue_filter.textChanged.connect(self.filter_queue)
-        
+
         # CONTACT LIST
         self.destination_filter = self.window.findChild(QLineEdit, "contact_filter")
         self.add_contact_btn = self.window.findChild(QPushButton, "add_contact_btn")
@@ -85,19 +101,19 @@ class MainWindow:
 
         self.destination_filter.textChanged.connect(self.filter_contacts)
         self.add_contact_btn.clicked.connect(self.open_add_contact)
-        
+
         # Default: Light Mode
         self.dark_mode = False
-        
+
         # Apply icons to buttons
         self.apply_theme_icons()
-        
+
         # send/request confirmation window
         self.file_send = self.window.findChild(QPushButton, "file_send")
 
         # QUEUE
         self.file_send.clicked.connect(self.handle_file_send)
-        
+
         # Find widgets from UI
         self.TOOLBAR = self.window.findChild(QToolButton, "TOOLBAR")
         self.SETTINGS = self.window.findChild(QToolButton, "SETTINGS")
@@ -111,7 +127,7 @@ class MainWindow:
 
         toolbarMenu.addAction(action_fileLog)
         toolbarMenu.addAction(action_recentlySent)
-        
+
         action_fileLog.triggered.connect(self.fileLog)
         action_recentlySent.triggered.connect(self.recentlySent)
 
@@ -154,16 +170,16 @@ class MainWindow:
     # Terminal
     def open_terminal(self):
         subprocess.Popen(["x-terminal-emulator"])
-       
+
     # apply icons to suspend, cancel, resume
     def apply_theme_icons(self):
-    
+
         icons = {
             "resume": "media-playback-start",
             "suspend": "media-playback-pause",
-            "cancel": "media-playback-stop"
+            "cancel": "media-playback-stop",
         }
-        
+
         for name, icon_name in icons.items():
             btn = self.window.findChild(QPushButton, name)
             if btn:
@@ -174,8 +190,8 @@ class MainWindow:
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         self.confirm_window.setWindowTitle("Confirm Send")
         self.confirm_window.show()
-    
-    #Settings
+
+    # Settings
     # Dark Mode
     def enable_dark_mode(self):
         app = QApplication.instance()
@@ -239,22 +255,20 @@ class MainWindow:
 
         dialog.exec()
 
-    #Toolbar
-    #Open File Log
+    # Toolbar
+    # Open File Log
     def fileLog(self):
-        dialog= QDialog(self.window)
+        dialog = QDialog(self.window)
         ui_dialog = Ui_file_log()
         ui_dialog.setupUi(dialog)
         dialog.setWindowTitle("File Log")
         dialog.setModal(True)
 
-        
-
-        #self.update_file_log(ui_dialog)
+        # self.update_file_log(ui_dialog)
 
         dialog.exec()
 
-    #Open Recently Sent
+    # Open Recently Sent
     def recentlySent(self):
         self.recentlySent_window = load_ui("Recently_Sent_ver0.ui")
         self.recentlySent_window.setWindowTitle("Recently Sent")
@@ -262,8 +276,12 @@ class MainWindow:
 
     # QUEUE FUNCTION
     def add_to_queue(self):
-        file_name = os.path.basename(self.selected_file_path) if hasattr(self, "selected_file_path") else f"File_{len(self.queue_items) + 1}.txt"
-        
+        file_name = (
+            os.path.basename(self.selected_file_path)
+            if hasattr(self, "selected_file_path")
+            else f"File_{len(self.queue_items) + 1}.txt"
+        )
+
         # Use whatever is currently typed in the bar, not just contact list selections
         destination = self.destination_filter.text().strip()
         if not destination:
@@ -299,18 +317,22 @@ class MainWindow:
         row_layout.addWidget(resume_btn)
 
         self.queue_layout.addWidget(row_widget)
-        self.queue_items.append({
-            "file": file_name,
-            "destination": destination,
-            "status": status_button,
-            "widget": row_widget
-        })
-    
+        self.queue_items.append(
+            {
+                "file": file_name,
+                "destination": destination,
+                "status": status_button,
+                "widget": row_widget,
+            }
+        )
+
     # Handles QUEUE
     def handle_file_send(self):
         has_file = hasattr(self, "selected_file_path")
         file_name = os.path.basename(self.selected_file_path) if has_file else None
-        destination = self.destination_filter.text().strip() or getattr(self, "selected_destination", "")
+        destination = self.destination_filter.text().strip() or getattr(
+            self, "selected_destination", ""
+        )
 
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         confirm_label = self.confirm_window.findChild(QLabel, "confirm_label")
@@ -328,7 +350,9 @@ class MainWindow:
             # Warning mode - no destination selected
             self.confirm_window.setWindowTitle("Warning")
             if confirm_label:
-                confirm_label.setText("Destination missing!\n\nPlease select a destination.")
+                confirm_label.setText(
+                    "Destination missing!\n\nPlease select a destination."
+                )
             # Only show OK button, hide cancel
             button_box.setStandardButtons(QDialogButtonBox.StandardButton.Ok)
             button_box.accepted.connect(self.confirm_window.close)
@@ -336,21 +360,24 @@ class MainWindow:
             # Confirmation mode - proceed normally
             self.confirm_window.setWindowTitle("Confirm Send")
             if confirm_label:
-                confirm_label.setText(f"Is this correct?\n\nFile: {file_name}\n\nDestination: {destination}")
+                confirm_label.setText(
+                    f"Is this correct?\n\nFile: {file_name}"
+                    f"\n\nDestination: {destination}"
+                )
             button_box.accepted.connect(self.add_to_queue)
             button_box.rejected.connect(self.confirm_window.close)
 
         self.confirm_window.show()
-            
+
     # HANDLE FILE SELECT
     def file_selected(self, index):
         path = self.model.filePath(index)
         print("Selected file:", path)
-        
+
         if os.path.isfile(path):  # Only display if file, not folder
             self.file_selected_display.setText(os.path.basename(path))
             self.selected_file_path = path  # Store full path when you send the file
-        
+
     # Handles SOURCE SEARCH
     def filter_files(self, text):
         if text:
@@ -397,7 +424,7 @@ class MainWindow:
             self.search_list.hide()
             self.search_list.clear()
             self.source_tree.show()
-            
+
     # Handles SEARCH SELECT
     def search_file_selected(self, index):
         item = self.search_list.currentItem()
@@ -413,7 +440,7 @@ class MainWindow:
                 self.file_selected_display.setText(file_name)
                 self.selected_file_path = full_path
                 print("Selected file:", full_path)
-            
+
     # Handles search in queue
     def filter_queue(self, text):
         for item in self.queue_items:
@@ -421,8 +448,8 @@ class MainWindow:
                 item["widget"].setVisible(True)
             else:
                 item["widget"].setVisible(False)
-     
-    #CONTACT
+
+    # CONTACT
     # Opens the Add Contact window, auto-populates fields with typed address
     def open_add_contact(self):
         typed_address = self.destination_filter.text().strip()
@@ -460,19 +487,21 @@ class MainWindow:
         delete_btn.setIcon(QIcon.fromTheme("edit-delete"))
         edit_btn.setFixedSize(30, 26)
         delete_btn.setFixedSize(30, 26)
-        edit_btn.clicked.connect(lambda: self.open_edit_contact(name_label, address_label, row_widget))
-        delete_btn.clicked.connect(lambda: self.delete_contact(row_widget, name_label.text(), address_label.text()))
+        edit_btn.clicked.connect(
+            lambda: self.open_edit_contact(name_label, address_label, row_widget)
+        )
+        delete_btn.clicked.connect(
+            lambda: self.delete_contact(
+                row_widget, name_label.text(), address_label.text()
+            )
+        )
         row_layout.addWidget(name_label)
         row_layout.addWidget(address_label)
         row_layout.addWidget(edit_btn)
         row_layout.addWidget(delete_btn)
         self.contact_layout.addWidget(row_widget)
-        self.contacts.append({
-            "name": name,
-            "address": address,
-            "widget": row_widget
-        })
-    
+        self.contacts.append({"name": name, "address": address, "widget": row_widget})
+
         # Clicking the row selects it as the destination
         name_label.mousePressEvent = lambda event: self.select_contact(address)
         address_label.mousePressEvent = lambda event: self.select_contact(address)
@@ -486,12 +515,18 @@ class MainWindow:
         name_box.setText(name_label.text())
         address_box.setText(address_label.text())
         button_box = self.contact_edit_window.findChild(QDialogButtonBox, "buttonBox")
-        button_box.accepted.connect(lambda: self.update_contact(name_box, address_box, name_label, address_label, row_widget))
+        button_box.accepted.connect(
+            lambda: self.update_contact(
+                name_box, address_box, name_label, address_label, row_widget
+            )
+        )
         button_box.rejected.connect(self.contact_edit_window.close)
         self.contact_edit_window.show()
 
     # Validates and applies edits to an existing contact row
-    def update_contact(self, name_box, address_box, name_label, address_label, row_widget):
+    def update_contact(
+        self, name_box, address_box, name_label, address_label, row_widget
+    ):
         name = name_box.text().strip()
         address = address_box.text().strip()
         if not name or not address:
@@ -513,7 +548,10 @@ class MainWindow:
         # Find the label in the confirmation window and set custom text
         confirm_label = self.confirm_window.findChild(QLabel, "confirm_label")
         if confirm_label:
-            confirm_label.setText(f"Are you sure you want to delete the following contact?\n\nName: {name}\n Address: {address}")
+            confirm_label.setText(
+                f"Are you sure you want to delete the following contact?"
+                f"\n\nName: {name}\n Address: {address}"
+            )
 
         button_box = self.confirm_window.findChild(QDialogButtonBox, "buttonBox")
         button_box.accepted.connect(lambda: self._do_delete_contact(row_widget))
@@ -530,20 +568,30 @@ class MainWindow:
     # Filters visible contacts by name or address as the user types
     def filter_contacts(self, text):
         for contact in self.contacts:
-            if text.lower() in contact["name"].lower() or text.lower() in contact["address"].lower():
+            if (
+                text.lower() in contact["name"].lower()
+                or text.lower() in contact["address"].lower()
+            ):
                 contact["widget"].setVisible(True)
             else:
                 contact["widget"].setVisible(False)
-                
+
     # Populates the destination bar with the clicked contact's address
     def select_contact(self, address):
         self.destination_filter.setText(address)
         self.selected_destination = address
-    #THEME SETTINGS
+
+    # THEME SETTINGS
     # Apply background theme
     def selectBackgroundPicture(self, dialog):
         from PySide6.QtWidgets import QFileDialog
-        file_path, _ = QFileDialog.getOpenFileName(dialog, "Select Background Image", "", "Images (*.png *.jpg *.jpeg *.bmp *.gif)")
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            dialog,
+            "Select Background Image",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp *.gif)",
+        )
         if file_path:
             self.bg_image_path = file_path
 
@@ -551,16 +599,24 @@ class MainWindow:
     def removeBackgroundImage(self, dialog):
         self.bg_image_path = None
 
-    #Applys accent colors to hovering and buttons
+    # Applys accent colors to hovering and buttons
     def buildMainStyleSheet(self) -> str:
         accent_color = self.getAccentColor(self.selected_accent)
         accent = accent_color.name()
         return (
-            f"QPushButton, QToolButton {{ background-color: {accent}; color: white; }}\n"
-            + f"QToolButton#TOOLBAR, QToolButton#SETTINGS, QToolButton#TERMINAL {{ background-color: {accent}; color: white; }}\n"
-            + f"QMenu {{ background-color: white; color: black; }}\n"
+            f"QPushButton, QToolButton"
+            f" {{ background-color: {accent}; color: white; }}\n"
+            + (
+                "QToolButton#TOOLBAR, QToolButton#SETTINGS,"
+                " QToolButton#TERMINAL"
+                f" {{ background-color: {accent}; color: white; }}\n"
+            )
+            + "QMenu { background-color: white; color: black; }\n"
             + f"QMenu::item:selected {{ background-color: {accent}; color: white; }}\n"
-            + f"QComboBox QAbstractItemView::item:selected {{ background-color: {accent}; color: white; }}\n"
+            + (
+                "QComboBox QAbstractItemView::item:selected"
+                f" {{ background-color: {accent}; color: white; }}\n"
+            )
             + f"QComboBox::drop-down {{ background-color: {accent}; }}"
         )
 
@@ -613,7 +669,7 @@ class MainWindow:
         self.window.update()
         QApplication.instance().processEvents()
 
-    #Scales background image to main window
+    # Scales background image to main window
     def on_main_resize(self, event):
         if self.bg_image_path:
             self.applyBackgroundImage()
@@ -623,7 +679,7 @@ class MainWindow:
     def getAccentColor(self, accent_name: str) -> QColor:
         """Return a QColor for the selected accent name."""
         colors = {
-            "Orange": QColor(199,110,0),
+            "Orange": QColor(199, 110, 0),
             "Light Blue": QColor(0, 120, 215),
             "Yellow": QColor(230, 180, 0),
             "Green": QColor(0, 170, 80),
@@ -631,6 +687,7 @@ class MainWindow:
             "Red": QColor(200, 40, 40),
         }
         return colors.get(accent_name, QColor(0, 120, 215))
+
 
 if __name__ == "__main__":
     app = QApplication([])
