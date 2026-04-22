@@ -1,17 +1,16 @@
-# frontend/SpaceZilla_ver0/queue_mapping.py
+# frontend/queue_button_mapping.py
 #
-# This controller wires the SpaceZilla queue UI to the backend facade.
-# It follows the same pattern as TestController:
-#   - takes a backend and a ui as arguments
-#   - wires UI buttons to controller methods in __init__
-#   - uses on_status_change as the backend callback
+# Wires the SpaceZilla queue UI to the controller's IPC server.
+# Follows the architecture: GUI never calls backend directly —
+# all transfer operations go through HTTP to 127.0.0.1:{ipc_port}.
 #
 # It does NOT contain any widget creation or backend logic.
 # All widget creation lives in spacezilla_main.py (the UI).
-# All transfer logic lives in BackendFacade -> TransferBackend.
+# All transfer logic lives in the IPC server (controller.py).
 
 from __future__ import annotations
 
+import httpx
 from PySide6.QtCore import QFileInfo
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -24,21 +23,30 @@ from PySide6.QtWidgets import (
 
 
 class QueueMapping:
-    def __init__(self, backend, ui):
-        # Save references to the backend and UI.
-        self.backend = backend
+    def __init__(self, ipc_port: int, ui):
+        # Save references to the IPC port and UI.
+        self.ipc_port = ipc_port
         self.ui = ui
 
         # Wire UI buttons to controller methods.
         self.ui.file_send.clicked.connect(self.send_action)
 
+    def _url(self, path: str) -> str:
+        return f"http://127.0.0.1:{self.ipc_port}{path}"
+
+    def _is_connected(self) -> bool:
+        try:
+            response = httpx.get(self._url("/connected"), timeout=2)
+            return response.json().get("connected", False)
+        except Exception:
+            return False
+
     def send_action(self):
         """
         Called when the file send button is clicked.
 
-        Shows a confirmation dialog, then starts processing the queue.
-        Status updates come back through the backend callback and are
-        reflected on each file's status button in the UI.
+        Shows a confirmation dialog, then sends a POST to /queue/send
+        on the IPC server to start processing the queue.
         """
         from pathlib import Path
         from frontend.SpaceZilla_ver0.spacezilla_main import load_ui
@@ -46,7 +54,7 @@ class QueueMapping:
         if not self.ui.queue_items:
             return
 
-        if not self.backend.is_connected():
+        if not self._is_connected():
             print("Send blocked: backend not connected to ION")
             return
 
@@ -55,45 +63,54 @@ class QueueMapping:
         confirm.setWindowTitle("Confirm")
 
         if confirm.exec() == QDialog.Accepted:
-            ok, msg = self.backend.send_files(on_change=self.on_status_change)
-            if not ok:
-                print(f"Send failed: {msg}")
+            try:
+                response = httpx.post(self._url("/queue/send"), timeout=5)
+                result = response.json()
+                if not result.get("ok"):
+                    print(f"Send failed: {result.get('msg')}")
+            except Exception as e:
+                print(f"Send request failed: {e}")
         else:
             print("Send cancelled by user")
 
     def suspend_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
-        """
-        Called when a file's suspend button is clicked.
-        """
-        ok, msg = self.backend.suspend()
-        if ok:
-            status_button.setText("Suspended")
+        """Called when a file's suspend button is clicked."""
+        try:
+            response = httpx.post(self._url("/queue/suspend"), timeout=5)
+            result = response.json() if response.content else {}
+            if result.get("ok"):
+                status_button.setText("Suspended")
+        except Exception as e:
+            print(f"Suspend request failed: {e}")
 
     def cancel_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
-        """
-        Called when a file's cancel button is clicked.
-        """
-        ok, msg = self.backend.cancel()
-        if ok:
-            status_button.setText("Cancelled")
-            suspend_btn.setEnabled(False)
-            cancel_btn.setEnabled(False)
-            resume_btn.setEnabled(False)
+        """Called when a file's cancel button is clicked."""
+        try:
+            response = httpx.post(self._url("/queue/cancel"), timeout=5)
+            result = response.json() if response.content else {}
+            if result.get("ok"):
+                status_button.setText("Cancelled")
+                suspend_btn.setEnabled(False)
+                cancel_btn.setEnabled(False)
+                resume_btn.setEnabled(False)
+        except Exception as e:
+            print(f"Cancel request failed: {e}")
 
     def resume_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
-        """
-        Called when a file's resume button is clicked.
-        """
-        ok, msg = self.backend.resume()
-        if ok:
-            status_button.setText("Resumed")
+        """Called when a file's resume button is clicked."""
+        try:
+            response = httpx.post(self._url("/queue/resume"), timeout=5)
+            result = response.json() if response.content else {}
+            if result.get("ok"):
+                status_button.setText("Resumed")
+        except Exception as e:
+            print(f"Resume request failed: {e}")
 
     def on_status_change(self, queue_id: str, status: str):
         """
-        Callback invoked by the backend when a queued file changes status.
-
-        Looks up the matching queue item in the UI and updates its
-        status button text.
+        Updates the status button for a queue item.
+        Called manually or via future polling — the IPC server
+        cannot push callbacks to the frontend.
         """
         status_text = {
             "Queued":    "Pending",
@@ -163,11 +180,20 @@ class QueueMapping:
     # -----------------------------------------------------------------------
 
     def enqueue_file(self, file_path: str) -> None:
-        """Register a file with the backend and add a row to the UI queue area."""
-        ids = self.backend.queue_files([file_path])
+        """POST to /queue/enqueue and add a row to the UI queue area."""
+        try:
+            response = httpx.post(
+                self._url("/queue/enqueue"),
+                json={"paths": [file_path]},
+                timeout=5,
+            )
+            ids = response.json().get("ids", [])
+        except Exception as e:
+            print(f"Enqueue request failed: {e}")
+            return
+
         if not ids:
             print(f"Enqueue failed for {file_path}")
             return
 
-        queue_id = ids[0]
-        self.add_queue_row(queue_id=queue_id, file_path=file_path)
+        self.add_queue_row(queue_id=ids[0], file_path=file_path)

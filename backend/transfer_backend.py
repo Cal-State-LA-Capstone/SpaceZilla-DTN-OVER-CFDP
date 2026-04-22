@@ -133,23 +133,21 @@ class TransferBackend:
 
     # suspend doesnt work because the files send too fast
     def suspend(self) -> tuple[bool, str]:
-        return self.adapter.suspend()
+        return False, "Suspend not yet implemented."
 
     def cancel(self) -> tuple[bool, str]:
-        ok, msg = self.adapter.cancel()
+        with self.active_lock:
+            active_id = self.active_id
 
-        if ok:
-            with self.active_lock:
-                active_id = self.active_id
+        if active_id is not None:
+            self._update_status(active_id, "Canceled")
+            return True, "Cancelled."
 
-            if active_id is not None:
-                self._update_status(active_id, "Canceled")
-
-        return ok, msg
+        return False, "No active transfer to cancel."
 
     # doesnt work yet
     def resume(self) -> tuple[bool, str]:
-        return self.adapter.resume()
+        return False, "Resume not yet implemented."
 
     # returns the current transfer status as a string.
     # It looks for the active file to get the file status

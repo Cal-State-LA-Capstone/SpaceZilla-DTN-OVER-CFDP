@@ -34,7 +34,7 @@ def load_ui(ui_file):
 
 
 class MainWindow:
-    def __init__(self, backend):
+    def __init__(self, ipc_port: int):
         self.window = load_ui("SpaceZilla_ver0.ui")
         self.window.setWindowTitle("SpaceZilla")
 
@@ -131,8 +131,8 @@ class MainWindow:
         self.queue_area.setLayout(self.queue_layout)
         self.queue_items = []
 
-        # QUEUE MAPPING — wires file_send button and status callbacks to backend
-        self.queue_mapping = QueueMapping(backend, self)
+        # QUEUE MAPPING — wires file_send button and status callbacks to IPC server
+        self.queue_mapping = QueueMapping(ipc_port, self)
 
     def show(self):
         self.window.show()

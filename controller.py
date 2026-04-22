@@ -77,6 +77,10 @@ def resume() -> dict:
 @ipc_app.get("/queue")
 def get_queue() -> dict:
     return {"queue": facade.get_queue()}
+
+@ipc_app.get("/connected")
+def connected() -> dict:
+    return {"connected": facade.is_connected()}
 # -- Controller --------------------------------------------------------------
 
 

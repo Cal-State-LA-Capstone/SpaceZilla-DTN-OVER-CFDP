@@ -12,7 +12,7 @@ import sys
 
 import frontend
 import runtime_logger
-from controller import Controller, facade
+from controller import Controller
 from PySide6.QtWidgets import QApplication
 
 
@@ -46,7 +46,7 @@ def main() -> None:
     # (Qt widgets can't be created from background threads).
     # Then enter the event loop until the user closes the window.
     if ctrl._node_id is not None and ctrl._ipc_port is not None:
-        frontend.show_main_window(ctrl._node_id, ctrl._ipc_port, facade)
+        frontend.show_main_window(ctrl._node_id, ctrl._ipc_port)
         app.exec()
 
     ctrl.shutdown()
