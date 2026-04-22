@@ -13,7 +13,7 @@ dev branch naming convention:
 ### Prerequisites
 
 - **Python 3.13+**
-- **PyION & ION** - Install via (Installation Guide)[https://github.com/NASA-Protocol-Exploits/handbook/blob/main/docs/learning/training/pyion/installing-pyion.md]
+- **Docker** — each node runs ION inside a container
 - **[uv](https://docs.astral.sh/uv/)** — Python package manager
 
 ### Install
@@ -23,6 +23,22 @@ git clone https://github.com/Cal-State-LA-Capstone/SpaceZilla-DTN-OVER-CFDP.git
 cd SpaceZilla-DTN-OVER-CFDP
 uv sync
 ```
+
+### Docker Setup (one-time)
+
+After installing Docker, add your user to the `docker` group so SpaceZilla can manage containers without needing root:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+**Log out and log back in** (or reboot) for the change to take effect. Verify it worked:
+
+```bash
+docker info
+```
+
+If it prints server info without "permission denied", you're good. SpaceZilla will auto-start the Docker daemon if it's not running.
 
 ### Environment Groups
 
@@ -68,6 +84,7 @@ Each SpaceZilla process manages exactly one ION node. To run multiple nodes, the
 ### Troubleshooting
 
 - **"Docker Not Running" dialog appears** — Click "Yes" to start Docker automatically. On Linux you'll be asked for your password. On macOS/Windows, Docker Desktop will open.
+- **Docker Desktop won't start** — Make sure Docker is installed. See https://docs.docker.com/get-docker/
 - **"Boot Failed" warning** — Docker may be running but the ION image isn't built yet. Ask a team member or check [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for dev setup steps.
 - **Process won't exit after closing the window** — Press Ctrl+C in the terminal.
 
