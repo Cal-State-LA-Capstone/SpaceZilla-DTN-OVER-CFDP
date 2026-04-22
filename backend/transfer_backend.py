@@ -132,21 +132,32 @@ class TransferBackend:
         return True, "Queue processing started."
 
     # suspend doesnt work because the files send too fast
-    def suspend(self) -> tuple[bool, str]:
+    def suspend(self, queue_id: str | None = None) -> tuple[bool, str]:
         return False, "Suspend not yet implemented."
 
-    def cancel(self) -> tuple[bool, str]:
-        with self.active_lock:
-            active_id = self.active_id
+    def cancel(self, queue_id: str | None = None) -> tuple[bool, str]:
+        target_id = queue_id
 
-        if active_id is not None:
-            self._update_status(active_id, "Canceled")
-            return True, "Cancelled."
+        # if no specific file, target the active transfer
+        if target_id is None:
+            with self.active_lock:
+                target_id = self.active_id
 
-        return False, "No active transfer to cancel."
+        if target_id is None:
+            return False, "No active transfer to cancel."
+
+        with self.queue_lock:
+            item = self._get_item_by_id(target_id)
+            if item is None:
+                return False, f"File {target_id} not found in queue."
+            if item["status"] not in {"Queued", "Running"}:
+                return False, f"Cannot cancel file with status '{item['status']}'."
+
+        self._update_status(target_id, "Canceled")
+        return True, "Cancelled."
 
     # doesnt work yet
-    def resume(self) -> tuple[bool, str]:
+    def resume(self, queue_id: str | None = None) -> tuple[bool, str]:
         return False, "Resume not yet implemented."
 
     # returns the current transfer status as a string.

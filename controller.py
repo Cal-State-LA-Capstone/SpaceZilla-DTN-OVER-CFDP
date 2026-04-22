@@ -60,19 +60,19 @@ def send() -> dict:
     return {"ok":ok, "msg":msg}
 
 @ipc_app.post("/queue/suspend")
-def suspend() -> dict:
-    ok, msg = facade.suspend()
-    return {"ok": ok, "msg":msg}
+def suspend(body: dict) -> dict:
+    ok, msg = facade.suspend(body.get("queue_id"))
+    return {"ok": ok, "msg": msg}
 
 @ipc_app.post("/queue/cancel")
-def cancel() -> dict:
-    ok, msg = facade.cancel()
-    return {"ok":ok, "msg":msg}
+def cancel(body: dict) -> dict:
+    ok, msg = facade.cancel(body.get("queue_id"))
+    return {"ok": ok, "msg": msg}
 
 @ipc_app.post("/queue/resume")
-def resume() -> dict:
-    ok, msg = facade.resume()
-    return {"ok":ok, "msg":msg}
+def resume(body: dict) -> dict:
+    ok, msg = facade.resume(body.get("queue_id"))
+    return {"ok": ok, "msg": msg}
 
 @ipc_app.get("/queue")
 def get_queue() -> dict:

@@ -76,7 +76,7 @@ class QueueMapping:
     def suspend_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
         """Called when a file's suspend button is clicked."""
         try:
-            response = httpx.post(self._url("/queue/suspend"), timeout=5)
+            response = httpx.post(self._url("/queue/suspend"), json={"queue_id": queue_id}, timeout=5)
             result = response.json() if response.content else {}
             if result.get("ok"):
                 status_button.setText("Suspended")
@@ -86,7 +86,7 @@ class QueueMapping:
     def cancel_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
         """Called when a file's cancel button is clicked."""
         try:
-            response = httpx.post(self._url("/queue/cancel"), timeout=5)
+            response = httpx.post(self._url("/queue/cancel"), json={"queue_id": queue_id}, timeout=5)
             result = response.json() if response.content else {}
             if result.get("ok"):
                 status_button.setText("Cancelled")
@@ -99,7 +99,7 @@ class QueueMapping:
     def resume_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
         """Called when a file's resume button is clicked."""
         try:
-            response = httpx.post(self._url("/queue/resume"), timeout=5)
+            response = httpx.post(self._url("/queue/resume"), json={"queue_id": queue_id}, timeout=5)
             result = response.json() if response.content else {}
             if result.get("ok"):
                 status_button.setText("Resumed")

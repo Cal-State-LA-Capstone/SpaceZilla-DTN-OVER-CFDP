@@ -54,14 +54,14 @@ class BackendFacade:
     def send_files(self, on_change=None) -> tuple[bool, str]:
         return self.transfer_backend.send_files(on_change=on_change)
 
-    def suspend(self) -> tuple[bool, str]:
-        return self.transfer_backend.suspend()
+    def suspend(self, queue_id: str | None = None) -> tuple[bool, str]:
+        return self.transfer_backend.suspend(queue_id)
 
-    def cancel(self) -> tuple[bool, str]:
-        return self.transfer_backend.cancel()
+    def cancel(self, queue_id: str | None = None) -> tuple[bool, str]:
+        return self.transfer_backend.cancel(queue_id)
 
-    def resume(self) -> tuple[bool, str]:
-        return self.transfer_backend.resume()
+    def resume(self, queue_id: str | None = None) -> tuple[bool, str]:
+        return self.transfer_backend.resume(queue_id)
 
     def status_indicator(self) -> str:
         return self.transfer_backend.status_indicator()
