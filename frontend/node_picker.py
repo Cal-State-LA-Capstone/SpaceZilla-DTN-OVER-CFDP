@@ -59,7 +59,7 @@ def check_docker_available() -> DockerStatus:
     On Linux this triggers a graphical password prompt (pkexec).
     On macOS/Windows it opens Docker Desktop.
     """
-    status = backend.check_docker()
+    status = backend.docker_backend.check_docker()
     if status.available:
         return status
 

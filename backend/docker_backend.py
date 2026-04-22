@@ -51,6 +51,21 @@ _DOCKERFILE = (
 # Image Build
 # -----------------------------
 
+def start_ion_logger(container_id: str) -> None:
+    """Runs 'docker exec container_id tail -f in seperate thread forever!"""
+    ion_logger = get_logger("ion-log")
+
+    def _capture():
+        process = subprocess.Popen(
+            ["docker", "exec", container_id, "tail", "-f", "/home/ion.log"],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        for line in process.stdout:
+            ion_logger.info(line.strip())
+
+    thread = threading.Thread(target=_capture, daemon=True)
+    thread.start()
 
 def build_image(*, force: bool = False) -> None:
     """

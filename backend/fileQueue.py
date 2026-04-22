@@ -12,7 +12,7 @@ import os
 import threading
 import time
 
-import pyion
+import backend.pyion_adapter
 
 
 class FileQueue:

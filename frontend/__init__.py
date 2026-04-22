@@ -46,15 +46,16 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
 
     # MainWindow loads .ui files with bare filenames (relative to cwd).
     # We chdir to SpaceZilla_ver0/ so the files are found, then restore.
-    sz_dir = str(Path(__file__).parent / "SpaceZilla_ver0")
+    sz_dir = str(Path(__file__).parent / "SpaceZilla_ver1")
     original_cwd = os.getcwd()
     os.chdir(sz_dir)
     try:
         sys.path.insert(0, sz_dir)
-        from frontend.SpaceZilla_ver0.spacezilla_main import MainWindow
+        #from frontend.SpaceZilla_ver0.spacezilla_main import MainWindow
+        from frontend.frontend_facade import MainWindow
 
         QApplication.instance() or QApplication(sys.argv)
-        window = MainWindow()
+        window = frontend_facade.MainWindow()
     finally:
         os.chdir(original_cwd)
 
