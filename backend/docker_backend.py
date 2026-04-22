@@ -140,6 +140,7 @@ def start_container(config: NodeConfig) -> str:
             "1.0",
             "--memory",
             "512m",
+            "--ipc=host",
             # Pass configuration via environment variables
             "-e",
             f"ION_NODE_NUMBER={config.ion_node_number}",
