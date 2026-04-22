@@ -9,6 +9,9 @@ on:
       - "uv.lock"
   pull_request:
     branches: ["main"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**" 
     paths:
       - "**.py"
       - "pyproject.toml"
