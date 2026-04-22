@@ -32,7 +32,7 @@ class TransferBackend:
 
         self.parser: ionlog_parser | None = None
 
-    def set_parser(parser:ionlog_parser) -> None:
+    def set_parser(self, parser: ionlog_parser) -> None:
         self.parser = parser
 
     def connect(

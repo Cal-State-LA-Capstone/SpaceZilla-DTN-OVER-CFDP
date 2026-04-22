@@ -30,22 +30,7 @@ class QueueMapping:
         self.ui = ui
 
         # Wire UI buttons to controller methods.
-        self.ui.source_btn.clicked.connect(self.source_action)
         self.ui.file_send.clicked.connect(self.send_action)
-
-    def source_action(self):
-        """
-        Called when the source button is clicked.
-
-        Opens the file picker dialog and queues each selected file
-        with the backend, then adds a row to the UI queue area.
-        """
-        from frontend.SpaceZilla_ver0.spacezilla_main import FilePickerDialog
-
-        dialog = FilePickerDialog(self.ui.window)
-        if dialog.exec() == QDialog.Accepted and dialog.selected_files:
-            for path in dialog.selected_files:
-                self._enqueue_file(path)
 
     def send_action(self):
         """
@@ -55,15 +40,18 @@ class QueueMapping:
         Status updates come back through the backend callback and are
         reflected on each file's status button in the UI.
         """
+        from pathlib import Path
         from frontend.SpaceZilla_ver0.spacezilla_main import load_ui
 
         if not self.ui.queue_items:
             return
 
         if not self.backend.is_connected():
+            print("Send blocked: backend not connected to ION")
             return
 
-        confirm = load_ui("Confirmation_ver0.ui")
+        ui_path = str(Path(__file__).parent / "SpaceZilla_ver0" / "Confirmation_ver0.ui")
+        confirm = load_ui(ui_path)
         confirm.setWindowTitle("Confirm")
 
         if confirm.exec() == QDialog.Accepted:
@@ -174,10 +162,8 @@ class QueueMapping:
     # Private
     # -----------------------------------------------------------------------
 
-    def _enqueue_file(self, file_path: str) -> None:
-        """
-        Register a file with the backend and add a row to the UI queue area.
-        """
+    def enqueue_file(self, file_path: str) -> None:
+        """Register a file with the backend and add a row to the UI queue area."""
         ids = self.backend.queue_files([file_path])
         if not ids:
             print(f"Enqueue failed for {file_path}")

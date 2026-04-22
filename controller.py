@@ -139,9 +139,10 @@ class Controller:
                 entity_id=self._config.ion_entity_id,
                 bp_endpoint=self._config.bp_endpoint,
                 )
+            logger.info("Backend connect: ok=%s msg=%s", ok, msg)
 
-            logger.info("Capturing ion.log")
-            backend.start_ion_logger(self._container_id)
+            # logger.info("Capturing ion.log")
+            # backend.start_ion_logger(self._container_id)  # not yet implemented
             self._start_ipc_server()
 
             # Uvicorn binds the socket in its thread — wait for the port

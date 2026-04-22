@@ -54,10 +54,17 @@ class BackendFacade:
     def send_files(self, on_change=None) -> tuple[bool, str]:
         return self.transfer_backend.send_files(on_change=on_change)
 
-    # returns a simple text indicator for the currently active transfer
+    def suspend(self) -> tuple[bool, str]:
+        return self.transfer_backend.suspend()
+
+    def cancel(self) -> tuple[bool, str]:
+        return self.transfer_backend.cancel()
+
+    def resume(self) -> tuple[bool, str]:
+        return self.transfer_backend.resume()
+
     def status_indicator(self) -> str:
         return self.transfer_backend.status_indicator()
-    
-    #for parsing ionlog
+
     def set_parser(self, parser) -> None:
         self.transfer_backend.set_parser(parser)

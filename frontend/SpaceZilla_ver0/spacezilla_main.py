@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+from frontend.queue_button_mapping import QueueMapping
 from PySide6.QtCore import QDir, QFile, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPalette
 from PySide6.QtUiTools import QUiLoader
@@ -33,7 +34,7 @@ def load_ui(ui_file):
 
 
 class MainWindow:
-    def __init__(self):
+    def __init__(self, backend):
         self.window = load_ui("SpaceZilla_ver0.ui")
         self.window.setWindowTitle("SpaceZilla")
 
@@ -79,11 +80,6 @@ class MainWindow:
 
         # send/request confirmation window
         self.file_send = self.window.findChild(QPushButton, "file_send")
-
-        self.file_send.clicked.connect(self.open_send_confirmation)
-
-        # QUEUE
-        self.file_send.clicked.connect(self.handle_file_send)
 
         # Find widgets from UI
         self.TOOLBAR = self.window.findChild(QToolButton, "TOOLBAR")
@@ -135,6 +131,9 @@ class MainWindow:
         self.queue_area.setLayout(self.queue_layout)
         self.queue_items = []
 
+        # QUEUE MAPPING — wires file_send button and status callbacks to backend
+        self.queue_mapping = QueueMapping(backend, self)
+
     def show(self):
         self.window.show()
 
@@ -156,11 +155,11 @@ class MainWindow:
             if btn:
                 btn.setIcon(QIcon.fromTheme(icon_name))
 
-    # Confirmation PopUps
-    def open_send_confirmation(self):
-        self.confirm_window = load_ui("Confirmation_ver0.ui")
-        self.confirm_window.setWindowTitle("Confirm Send")
-        self.confirm_window.show()
+    # Confirmation PopUps — replaced by QueueMapping.send_action
+    # def open_send_confirmation(self):
+    #     self.confirm_window = load_ui("Confirmation_ver0.ui")
+    #     self.confirm_window.setWindowTitle("Confirm Send")
+    #     self.confirm_window.show()
 
     # Settings
     # Dark Mode
@@ -216,64 +215,53 @@ class MainWindow:
         self.recentlySent_window.setWindowTitle("Recently Sent")
         self.recentlySent_window.show()
 
-    # QUEUE FUNCTION
-    def add_to_queue(self):
-        file_name = f"File_{len(self.queue_items) + 1}.txt"
+    # QUEUE FUNCTION — replaced by QueueMapping.add_queue_row
+    # def add_to_queue(self):
+    #     file_name = f"File_{len(self.queue_items) + 1}.txt"
+    #     row_widget = QWidget()
+    #     row_layout = QHBoxLayout(row_widget)
+    #     file_label = QLabel(file_name)
+    #     status_button = QPushButton("PENDING")
+    #     suspend_btn = QPushButton()
+    #     cancel_btn = QPushButton()
+    #     resume_btn = QPushButton()
+    #     for btn in [suspend_btn, cancel_btn, resume_btn]:
+    #         btn.setFixedSize(30, 26)
+    #     suspend_btn.setIcon(QIcon.fromTheme("media-playback-pause"))
+    #     cancel_btn.setIcon(QIcon.fromTheme("media-playback-stop"))
+    #     resume_btn.setIcon(QIcon.fromTheme("media-playback-start"))
+    #     suspend_btn.clicked.connect(lambda: status_button.setText("SUSPENDED"))
+    #     cancel_btn.clicked.connect(lambda: status_button.setText("CANCELLED"))
+    #     resume_btn.clicked.connect(lambda: status_button.setText("RESUMED"))
+    #     row_layout.addWidget(file_label)
+    #     row_layout.addWidget(status_button)
+    #     row_layout.addWidget(suspend_btn)
+    #     row_layout.addWidget(cancel_btn)
+    #     row_layout.addWidget(resume_btn)
+    #     self.queue_layout.addWidget(row_widget)
+    #     self.queue_items.append(
+    #         {"file": file_name, "status": status_button, "widget": row_widget}
+    #     )
 
-        row_widget = QWidget()
-        row_layout = QHBoxLayout(row_widget)
-
-        file_label = QLabel(file_name)
-        status_button = QPushButton("PENDING")
-
-        suspend_btn = QPushButton()
-        cancel_btn = QPushButton()
-        resume_btn = QPushButton()
-
-        for btn in [suspend_btn, cancel_btn, resume_btn]:
-            btn.setFixedSize(30, 26)
-
-        suspend_btn.setIcon(QIcon.fromTheme("media-playback-pause"))
-        cancel_btn.setIcon(QIcon.fromTheme("media-playback-stop"))
-        resume_btn.setIcon(QIcon.fromTheme("media-playback-start"))
-
-        suspend_btn.clicked.connect(lambda: status_button.setText("SUSPENDED"))
-        cancel_btn.clicked.connect(lambda: status_button.setText("CANCELLED"))
-        resume_btn.clicked.connect(lambda: status_button.setText("RESUMED"))
-
-        row_layout.addWidget(file_label)
-        row_layout.addWidget(status_button)
-        row_layout.addWidget(suspend_btn)
-        row_layout.addWidget(cancel_btn)
-        row_layout.addWidget(resume_btn)
-
-        self.queue_layout.addWidget(row_widget)
-
-        self.queue_items.append(
-            {"file": file_name, "status": status_button, "widget": row_widget}
-        )
-
-    # Handles QUEUE
-    def handle_file_send(self):
-        self.confirm_window = load_ui("Confirmation_ver0.ui")
-        self.confirm_window.setWindowTitle("Confirm Send")
-
-        result = self.confirm_window.exec()
-        # blocks action until user clicks OK or Cancel
-
-        if result == QDialog.Accepted:
-            self.add_to_queue()
-        else:
-            print("User cancelled file send")
+    # Handles QUEUE — replaced by QueueMapping.send_action
+    # def handle_file_send(self):
+    #     self.confirm_window = load_ui("Confirmation_ver0.ui")
+    #     self.confirm_window.setWindowTitle("Confirm Send")
+    #     result = self.confirm_window.exec()
+    #     # blocks action until user clicks OK or Cancel
+    #     if result == QDialog.Accepted:
+    #         self.add_to_queue()
+    #     else:
+    #         print("User cancelled file send")
 
     # HANDLE FILE SELECT
     def file_selected(self, index):
         path = self.model.filePath(index)
         print("Selected file:", path)
 
-        if os.path.isfile(path):  # Only display if file, not folder
+        if os.path.isfile(path):  # Only enqueue files, not folders
             self.file_selected_display.setText(os.path.basename(path))
-            self.selected_file_path = path  # Store full path when you send the file
+            self.queue_mapping.enqueue_file(path)
 
     # Handles search in source
     def filter_files(self, text):

@@ -32,12 +32,13 @@ def show_node_picker(
     open_node_picker(on_select=on_select, on_create=on_create)
 
 
-def show_main_window(node_id: str, ipc_port: int) -> None:
+def show_main_window(node_id: str, ipc_port: int, backend) -> None:
     """Switch from the Node Picker to the main SpaceZilla window.
 
     Args:
         node_id: Which node we're running.
         ipc_port: Port the IPC server is listening on.
+        backend: BackendFacade instance to pass to the UI layer.
     """
     import sys
     from pathlib import Path
@@ -54,7 +55,7 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
         from frontend.SpaceZilla_ver0.spacezilla_main import MainWindow
 
         QApplication.instance() or QApplication(sys.argv)
-        window = MainWindow()
+        window = MainWindow(backend)
     finally:
         os.chdir(original_cwd)
 
