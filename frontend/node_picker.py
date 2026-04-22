@@ -69,7 +69,7 @@ def check_docker_available() -> DockerStatus:
         f"{status.message}\n\nStart Docker now?",
     )
     if reply == QMessageBox.StandardButton.Yes:
-        return backend.start_docker()
+        return backend.docker_backend.start_docker()
     return status
 
 
