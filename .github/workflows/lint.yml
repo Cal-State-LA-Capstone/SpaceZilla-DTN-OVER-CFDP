@@ -10,9 +10,6 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "**.py"
-      - "pyproject.toml"
-      - "uv.lock"
 
 jobs:
   ruff:
