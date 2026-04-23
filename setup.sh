@@ -121,6 +121,7 @@ if [ ! -f "${LIBENV}" ]; then
     cat > "${LIBENV}" <<EOF
 PYION_BP_VERSION=BPv7
 LD_LIBRARY_PATH=/usr/local/lib
+ION_HOME=${ION_HOME}how
 EOF
     echo "lib.env created"
 else
