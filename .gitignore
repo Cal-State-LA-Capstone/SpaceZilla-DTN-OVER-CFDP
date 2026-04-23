@@ -221,3 +221,4 @@ logs/
 # Claude
 .claude/
 CLAUDE.md
+lib.env
