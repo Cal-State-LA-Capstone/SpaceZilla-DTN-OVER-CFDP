@@ -69,7 +69,28 @@ RUN cd "${PYION_HOME}" && \
 # Now that pyion is installed, it’s safe to set LD_LIBRARY_PATH for runtime.
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 
+# =====================================================
+# SpaceZilla backend agent + ZMQ IPC
+# =====================================================
+# pyzmq is the REQ/REP + PUB transport between the host process and the
+# in-container agent. Bake the backend code into the image so the agent
+# can be launched via ``python3 -m backend.container_agent`` from the
+# ``docker run`` CMD (no dev bind mount required in production).
+RUN pip3 install --no-cache-dir pyzmq platformdirs
+
+COPY backend /opt/spacezilla/backend
+COPY runtime_logger /opt/spacezilla/runtime_logger
+COPY store /opt/spacezilla/store
+ENV PYTHONPATH=/opt/spacezilla
+
+# Default REQ/REP + PUB ports inside the container. The host publishes
+# ephemeral mappings via ``docker run -p 127.0.0.1:0:5555 -p 127.0.0.1:0:5556``
+# and resolves them with ``docker port`` after start.
+EXPOSE 5555 5556
+
 # Make PID1 sane inside Docker (signal forwarding/reaping)
 ENTRYPOINT ["/usr/bin/tini","--"]
 
+# Default CMD stays a no-op so images can be shelled into for debugging.
+# The real command is supplied by :func:`backend.docker_backend.start_container`.
 CMD ["tail", "-f", "/dev/null"]

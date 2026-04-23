@@ -18,9 +18,11 @@
 from __future__ import annotations
 
 import platform
+import re
 import subprocess
 import tempfile
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 from runtime_logger import get_logger
@@ -35,6 +37,28 @@ logger = get_logger("docker_backend")
 
 # Name we tag the built image with
 _IMAGE_NAME = "spacezilla-ion"
+
+# Fixed ports inside the container for the REQ/REP + PUB IPC channel.
+# The host maps both to ephemeral 127.0.0.1 ports via ``-p``.
+_AGENT_REP_PORT = 5555
+_AGENT_PUB_PORT = 5556
+
+
+@dataclass
+class RunningContainer:
+    """Result of a successful :func:`start_container` call.
+
+    ``rep_port`` / ``pub_port`` are the host-side ephemeral ports the OS
+    assigned — resolved via ``docker port`` after ``docker run``.
+    ``host_mount`` echoes whether the read-only ``/`` -> ``/host`` bind
+    mount was applied.
+    """
+
+    container_id: str
+    rep_port: int
+    pub_port: int
+    host_mount: bool
+
 
 # Path to the Dockerfile lives one level up from backend/
 # This assumes your project layout is:
@@ -101,12 +125,39 @@ def build_image(*, force: bool = False) -> None:
 # -----------------------------
 
 
-def start_container(config: NodeConfig) -> str:
-    """
-    Run a detached container for this node. Returns the container ID.
+def _host_mount_args() -> list[str]:
+    """Return the ``-v`` flags that bind-mount the host root at ``/host``.
 
-    Generates an ionstart.rc file from the node config, mounts it
-    into the container, and runs ionstart so ION is ready for PyION.
+    Linux / macOS get ``-v /:/host:ro,rslave`` — ``ro`` keeps the mount
+    read-only so a compromised container cannot modify host files, and
+    ``rslave`` propagates new sub-mounts (e.g. plugged-in drives) into
+    the container without re-running. Windows Docker Desktop does not
+    always allow a full-drive mount, so fall back to ``//./``; callers
+    log a warning on failure.
+    """
+    system = platform.system()
+    if system == "Windows":
+        return ["-v", "//./:/host:ro"]
+    return ["-v", "/:/host:ro,rslave"]
+
+
+def start_container(
+    config: NodeConfig,
+    *,
+    host_mount: bool = False,
+) -> RunningContainer:
+    """Run a detached container for this node and return its handles.
+
+    Generates an ionstart.rc file from the node config, mounts it into
+    the container, publishes the ZMQ agent ports to random 127.0.0.1
+    ports, and launches ``backend.container_agent`` after ``ionstart``.
+
+    Args:
+        config: node configuration read from disk.
+        host_mount: when True, adds the read-only ``/`` -> ``/host`` bind
+            mount so the in-container pyion adapter can ``cfdp_send``
+            host files in place without copying. The GUI only sets this
+            after the user accepts the consent prompt.
     """
     # Import here to avoid circular imports or unnecessary dependency loading
     from backend.rc_generator import generate_rc
@@ -128,6 +179,19 @@ def start_container(config: NodeConfig) -> str:
 
     logger.debug("Generated ionstart.rc at %s", rc_file.name)
 
+    volume_args: list[str] = ["-v", f"{rc_file.name}:/home/ionstart.rc:ro"]
+    if host_mount:
+        volume_args.extend(_host_mount_args())
+        logger.info("host bind mount enabled: %s", volume_args[-1])
+    else:
+        logger.info("host bind mount disabled (no consent)")
+
+    agent_cmd = (
+        f"ionstart -I /home/ionstart.rc && "
+        f"python3 -m backend.container_agent "
+        f"--rep-port {_AGENT_REP_PORT} --pub-port {_AGENT_PUB_PORT}"
+    )
+
     # Launch container in detached mode
     result = subprocess.run(
         [
@@ -147,26 +211,105 @@ def start_container(config: NodeConfig) -> str:
             f"ION_ENTITY_ID={config.ion_entity_id}",
             "-e",
             f"BP_ENDPOINT={config.bp_endpoint}",
-            # Mount the generated .rc file into the container
-            "-v",
-            f"{rc_file.name}:/home/ionstart.rc:ro",
+            # Publish the agent's REQ/REP + PUB ports on loopback-only
+            # ephemeral host ports. Resolved via ``docker port`` below.
+            "-p",
+            f"127.0.0.1:0:{_AGENT_REP_PORT}",
+            "-p",
+            f"127.0.0.1:0:{_AGENT_PUB_PORT}",
+            *volume_args,
             _IMAGE_NAME,
-            # Start ION with the .rc file, then stay alive for PyION
+            # Start ION, then start the Python agent (replaces tail -f).
             "bash",
             "-c",
-            "ionstart -I /home/ionstart.rc && tail -f /dev/null",
+            agent_cmd,
         ],
         capture_output=True,
         text=True,
     )
 
     if result.returncode != 0:
+        # If the Windows full-drive mount failed, retry without it so the
+        # user at least gets a running agent — transfers will need files
+        # under explicitly-shared paths only.
+        if host_mount and platform.system() == "Windows":
+            logger.warning(
+                "docker run failed with host_mount on Windows; "
+                "retrying without the bind mount"
+            )
+            return start_container(config, host_mount=False)
         raise RuntimeError(
             f"docker run failed: {result.stderr.strip() or result.stdout.strip()}"
         )
 
-    # Docker returns the container ID on stdout
-    return result.stdout.strip()
+    container_id = result.stdout.strip()
+
+    try:
+        rep_port = _resolve_port(container_id, _AGENT_REP_PORT)
+        pub_port = _resolve_port(container_id, _AGENT_PUB_PORT)
+    except Exception:
+        # If we can't figure out the mapped ports, the container is
+        # useless — tear it down so the caller doesn't leak it.
+        stop_container(container_id)
+        raise
+
+    logger.info(
+        "Container %s started (REP=%d PUB=%d host_mount=%s)",
+        container_id[:12],
+        rep_port,
+        pub_port,
+        host_mount,
+    )
+
+    return RunningContainer(
+        container_id=container_id,
+        rep_port=rep_port,
+        pub_port=pub_port,
+        host_mount=host_mount,
+    )
+
+
+def start_container_legacy(config: NodeConfig) -> str:
+    """Deprecated compatibility shim.
+
+    The removed path used a stringly-typed return value. Any call site
+    still using it gets the container ID only; new code should use
+    :func:`start_container` and read the full :class:`RunningContainer`.
+    """
+    running = start_container(config, host_mount=False)
+    return running.container_id
+
+
+# Regex matching one line of ``docker port <id> <port>/tcp`` output,
+# e.g. ``0.0.0.0:49154`` or ``127.0.0.1:49155``. IPv6 lines are skipped.
+_PORT_LINE_RE = re.compile(r"^(?:\d+\.){3}\d+:(\d+)$")
+
+
+def _resolve_port(container_id: str, container_port: int) -> int:
+    """Ask Docker which host port was assigned for ``container_port/tcp``.
+
+    Returns the first IPv4 mapping. Raises ``RuntimeError`` if the
+    command fails or produces no parseable line.
+    """
+    result = subprocess.run(
+        ["docker", "port", container_id, f"{container_port}/tcp"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"docker port {container_id} {container_port}/tcp failed: "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
+
+    for line in result.stdout.splitlines():
+        match = _PORT_LINE_RE.match(line.strip())
+        if match:
+            return int(match.group(1))
+
+    raise RuntimeError(
+        f"no IPv4 mapping for {container_port}/tcp in: {result.stdout!r}"
+    )
 
 
 def stop_container(container_id: str) -> None:

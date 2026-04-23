@@ -1,0 +1,48 @@
+[project]
+name = "spacezilla-dtn-over-cfdp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "annotated-doc>=0.0.4",
+    "anyio>=4.13.0",
+    "certifi>=2026.2.25",
+    "click>=8.3.2",
+    "fastapi>=0.135.3",
+    "h11>=0.16.0",
+    "httpcore>=1.0.9",
+    "httpx>=0.28.1",
+    "idna>=3.11",
+    "platformdirs>=4.9.4",
+    "pydantic>=2.12.5",
+    "pydantic-core>=2.41.5",
+    "pyion>=0.2.dev0",
+    "pyside6>=6.11.0",
+    "pyzmq>=26",
+    "starlette>=1.0.0",
+    "typing-extensions>=4.15.0",
+    "typing-inspection>=0.4.2",
+    "uvicorn>=0.44.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-timeout>=2.3",
+    "ruff>=0.15.4",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: requires Docker — skipped unless a real daemon is reachable",
+]
+timeout = 60
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+src = ["backend", "scripts", "tests", "runtime_logger"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
