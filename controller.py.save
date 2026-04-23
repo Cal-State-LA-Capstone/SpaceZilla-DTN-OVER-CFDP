@@ -4,7 +4,7 @@ Each running SpaceZilla process creates exactly one Controller.
 The Controller handles the full lifecycle of a node:
 
     1. Load the node's saved config from disk  (store)
-    2. Start the local ION node process        (backend)
+    2. Spin up its Docker container            (backend)
     3. Start a local HTTP server for IPC       (FastAPI / uvicorn)
     4. Open the GUI main window                (frontend)
     5. On exit, tear everything down in reverse
@@ -23,7 +23,6 @@ import backend
 import frontend
 import store
 import uvicorn
-from backend.facade import BackendFacade
 from fastapi import FastAPI
 from runtime_logger import get_logger
 from store.models import NodeState
@@ -33,11 +32,10 @@ if TYPE_CHECKING:
 
 logger = get_logger("controller")
 
-# -- Facade ------------------------------------------------------------------
-# One instance shared across all IPC routes.
-_facade = BackendFacade()
-
 # -- IPC FastAPI app ---------------------------------------------------------
+# Lives at module level because uvicorn needs a importable app object.
+# Right now it only has a health-check endpoint; more routes will be
+# added here as features are built out.
 
 ipc_app = FastAPI()
 
@@ -48,92 +46,6 @@ def health() -> dict[str, str]:
     this node's IPC server is alive."""
     return {"status": "ok"}
 
-
-@ipc_app.post("/connect")
-def connect(node_number: int, entity_id: int, bp_endpoint: str) -> dict:
-    ok, msg = _facade.connect(
-        node_number=node_number,
-        entity_id=entity_id,
-        bp_endpoint=bp_endpoint,
-    )
-    return {"ok": ok, "message": msg}
-
-
-@ipc_app.post("/disconnect")
-def disconnect() -> dict:
-    ok, msg = _facade.disconnect()
-    return {"ok": ok, "message": msg}
-
-
-@ipc_app.get("/is_connected")
-def is_connected() -> dict:
-    return {"connected": _facade.is_connected()}
-
-
-@ipc_app.post("/queue")
-def queue_files(file_paths: list[str]) -> dict:
-    ids = _facade.queue_files(file_paths)
-    return {"queue_ids": ids}
-
-
-@ipc_app.delete("/queue/{queue_id}")
-def remove_file(queue_id: str) -> dict:
-    ok = _facade.remove_file(queue_id)
-    return {"ok": ok}
-
-
-@ipc_app.delete("/queue")
-def clear_queue() -> dict:
-    _facade.clear_queue()
-    return {"ok": True}
-
-
-@ipc_app.get("/queue")
-def get_queue() -> dict:
-    return {"queue": _facade.get_queue()}
-
-
-@ipc_app.post("/send")
-def send_files() -> dict:
-    ok, msg = _facade.send_files()
-    return {"ok": ok, "message": msg}
-
-
-@ipc_app.post("/suspend")
-def suspend() -> dict:
-    ok, msg = _facade.suspend()
-    return {"ok": ok, "message": msg}
-
-
-@ipc_app.post("/cancel")
-def cancel() -> dict:
-    ok, msg = _facade.cancel()
-    return {"ok": ok, "message": msg}
-
-
-@ipc_app.post("/resume")
-def resume() -> dict:
-    ok, msg = _facade.resume()
-    return {"ok": ok, "message": msg}
-
-
-@ipc_app.get("/status")
-def status() -> dict:
-    return {"status": _facade.status_indicator()}
-
-
-@ipc_app.post("/contact_plan")
-def contact_plan(peer_host: str, peer_num: int, peer_port: int = 4556) -> dict:
-    """Apply a contact plan to link this node to a peer."""
-    if _controller is None or _controller._config is None:
-        return {"ok": False, "message": "controller not ready"}
-    try:
-        backend.apply_contact_plan(_controller._config, peer_host, peer_num, peer_port)
-        return {"ok": True}
-    except Exception as e:
-        return {"ok": False, "message": str(e)}
-
-
 # -- Controller --------------------------------------------------------------
 
 
@@ -143,16 +55,16 @@ class Controller:
     Usage::
 
         ctrl = Controller()   # nothing running yet ("pre-boot")
-        ctrl.boot(node_id)    # loads config, starts ION + IPC
-        ctrl.connect()        # connects backend facade (call from main thread)
+        ctrl.boot(node_id)    # loads config, starts container + IPC + GUI
         ...
         ctrl.shutdown()       # tears everything down
     """
 
     def __init__(self) -> None:
+        # All of these start as None and get filled in during boot().
         self._node_id: str | None = None
         self._config: NodeConfig | None = None
-        self._ion_rc: str | None = None
+        self._container_id: str | None = None
         self._ipc_port: int | None = None
         self._server: uvicorn.Server | None = None
         self._server_thread: threading.Thread | None = None
@@ -164,34 +76,35 @@ class Controller:
         """Bring up everything needed to run a node.
 
         Returns True on success, False if something went wrong.
-        On failure any partially-started resources are cleaned up
-        automatically via shutdown().
+        On failure any partially-started resources (container, IPC
+        server) are cleaned up automatically via shutdown().
 
         Steps (in order):
             1. Read the node's config.json from disk.
-            2. Start the ION node process directly on the host.
-            3. Start the ION log capture thread.
-            4. Start a local IPC server so the GUI can talk to the controller.
-            5. Write the runtime state (PID, port, rc path) to disk.
-
-        Note: connect() must be called separately from the main thread
-        after boot() returns, because pyion requires the main thread.
+            2. Ask the backend to start a Docker container for this node.
+            3. Start a local IPC server so the GUI (and tests) can talk
+               to the controller over HTTP.
+            4. Write the runtime state (PID, port, container ID) to disk
+               so other processes can discover this node.
+            5. Tell the frontend to show the main SpaceZilla window.
         """
-        global _controller
         logger.info("Booting node %s", node_id)
 
         try:
             self._node_id = node_id
             self._config = store.load_config(node_id)
-            _controller = self
 
-            self._ion_rc = backend.start_ion(self._config)
-            logger.info("ION node started, rc at %s", self._ion_rc)
+            # Build the Docker image if it doesn't exist yet
+            backend.build_image()
 
-            backend.start_ion_logger()
+            self._container_id = backend.start_container(self._config)
+            logger.info("Container started: %s", self._container_id)
 
+            logger.info("Capturing ion.log")
+            backend.start_ion_logger(self._container_id)
             self._start_ipc_server()
 
+            # Uvicorn binds the socket in its thread — wait for the port
             for _ in range(50):
                 if self._ipc_port is not None:
                     break
@@ -201,39 +114,25 @@ class Controller:
 
             logger.info("IPC server listening on 127.0.0.1:%s", self._ipc_port)
 
-            
             store.save_state(
                 node_id,
                 NodeState(
                     node_id=node_id,
                     pid=os.getpid(),
                     ipc_port=self._ipc_port,
-                    #dockerless now
-                    rc_file_path=self._ion_rc,
+                    container_id=self._container_id,
                     status="running",
                 ),
             )
 
+            # GUI window is created by main.py on the main thread
+            # (Qt widgets can't be created from a worker thread).
             return True
 
         except Exception as e:
             logger.error("Boot failed for node %s: %s", node_id, e)
             self.shutdown()
             return False
-
-    def connect(self) -> tuple[bool, str]:
-        """Connect the backend facade to this node's BP endpoint.
-
-        Must be called from the main thread — pyion uses Python signals
-        internally which only work on the main thread.
-        """
-        if self._config is None:
-            return False, "not booted"
-        return _facade.connect(
-            node_number=self._config.ion_node_number,
-            entity_id=self._config.ion_entity_id,
-            bp_endpoint=self._config.bp_endpoint,
-        )
 
     def spawn_peer(self) -> None:
         """Open a brand-new SpaceZilla process for a second node.
@@ -254,14 +153,12 @@ class Controller:
 
         self._stop_ipc_server()
 
-        if _facade.is_connected():
-            _facade.disconnect()
-            logger.info("Pyion shut down")
+        if self._container_id is not None:
+            backend.stop_container(self._container_id)
+            logger.info("Container stopped: %s", self._container_id)
 
-        backend.stop_ion()
-        logger.info("ION node stopped")
-
-        
+        # Mark the node as stopped on disk so the Node Picker shows the
+        # correct status next time it's opened.
         if self._node_id is not None:
             store.save_state(
                 self._node_id,
@@ -276,8 +173,13 @@ class Controller:
     def _start_ipc_server(self) -> None:
         """Start the FastAPI IPC server in a background thread.
 
-        We bind to 127.0.0.1 (loopback only) with port 0 so the OS
-        gives us a free port.
+        We bind to 127.0.0.1 (loopback only, never exposed to the
+        network) with port 0 so the OS gives us a free port.
+
+        The tricky part: uvicorn doesn't tell us which port the OS
+        picked until *after* the server sockets are bound.  So we
+        monkey-patch the startup coroutine to grab the port from the
+        live socket once it's ready.
         """
         config = uvicorn.Config(
             app=ipc_app,
@@ -287,6 +189,9 @@ class Controller:
         )
         self._server = uvicorn.Server(config)
 
+        # -- Monkey-patch to discover the ephemeral port ----------------
+        # After uvicorn binds its sockets we inspect them to find out
+        # which port the OS assigned, then store it in self._ipc_port.
         original_startup = self._server.startup
 
         async def _patched_startup(
@@ -302,6 +207,8 @@ class Controller:
 
         self._server.startup = _patched_startup  # type: ignore[assignment]
 
+        # daemon=True so the thread dies automatically if the main
+        # process exits unexpectedly (no zombie threads).
         self._server_thread = threading.Thread(
             target=self._server.run,
             daemon=True,
@@ -316,7 +223,3 @@ class Controller:
             self._server_thread.join(timeout=5)
             self._server_thread = None
         self._server = None
-
-
-# module-level reference set during boot() so contact_plan route can access config
-_controller: Controller | None = None

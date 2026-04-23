@@ -84,6 +84,11 @@ class PyIonAdapter:
         this is the right place to do it.
         """
         try:
+            # CHANGED:
+            # Explicitly close the CFDP entity before dropping references.
+            if self.cfdp_proxy is not None and self.peer_entity_nbr is not None:
+                self.cfdp_proxy.cfdp_close(self.peer_entity_nbr)
+
             self._reset_state()
             return True, "Disconnected."
         except Exception as e:

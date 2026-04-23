@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="windowTitle">
+   <string>Contact Info</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+
+   <item>
+    <widget class="QLineEdit" name="contact_name">
+     <property name="placeholderText">
+      <string>Name</string>
+     </property>
+    </widget>
+   </item>
+
+   <!-- ADDED: Entity ID -->
+   <item>
+    <widget class="QLineEdit" name="contact_entity">
+     <property name="placeholderText">
+      <string>Entity ID (e.g. 2)</string>
+     </property>
+    </widget>
+   </item>
+
+   <!-- ADDED: Host -->
+   <item>
+    <widget class="QLineEdit" name="contact_host">
+     <property name="placeholderText">
+      <string>Host (e.g. 192.168.1.10)</string>
+     </property>
+    </widget>
+   </item>
+
+   <!-- ADDED: Port -->
+   <item>
+    <widget class="QLineEdit" name="contact_port">
+     <property name="placeholderText">
+      <string>Port (default 4556)</string>
+     </property>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok|QDialogButtonBox::Cancel</set>
+     </property>
+    </widget>
+   </item>
+
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

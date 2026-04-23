@@ -25,6 +25,12 @@ from store.nodes import (
     save_meta,
     save_state,
 )
+
+# ADDED:
+# Export contacts through the store package so they are integrated into the
+# datastore surface instead of living as a disconnected module.
+from backend.contact_plan import Contact, ContactStore, load_contact_store
+
 from store.paths import (
     app_data_dir,
     global_dir,
@@ -37,6 +43,8 @@ from store.paths import (
 )
 
 __all__ = [
+    "Contact",
+    "ContactStore",
     "DockerStatus",
     "GlobalSettings",
     "NodeConfig",
@@ -50,6 +58,7 @@ __all__ = [
     "global_dir",
     "list_nodes",
     "load_config",
+    "load_contact_store",
     "load_meta",
     "load_settings",
     "load_state",

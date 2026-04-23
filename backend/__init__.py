@@ -1,85 +1,33 @@
-"""Docker lifecycle helpers for ION containers.
+"""ION process lifecycle helpers.
 
-The controller calls these to build the ION image, spin up
-per-node containers, and tear them down. Every function shells
-out to the docker CLI via subprocess.
+The controller calls these to start and stop the local ION node.
+Replaces the Docker-based backend — ION runs directly on the host.
 """
 
 from __future__ import annotations
 
-import platform
+import os
 import subprocess
 import tempfile
 import threading
 import time
-from pathlib import Path
 
 from runtime_logger import get_logger
-from store.models import DockerStatus, NodeConfig
+from store.models import NodeConfig
 
 logger = get_logger("backend")
 
-# Name we tag the built image with
-_IMAGE_NAME = "spacezilla-ion"
-# Path to the Dockerfile lives one level up from backend/
-_DOCKERFILE = (
-    Path(__file__).resolve().parent.parent / "docker" / "pyion_v414a2.dockerfile"
-)
+# Track the running ION process
+_ion_process: subprocess.Popen | None = None
 
 
-def build_image(*, force: bool = False) -> None:
-    """Build the ION Docker image if it does not already exist.
+def start_ion(config: NodeConfig) -> str:
+    """Generate ionstart.rc and start the ION node process.
 
-    Args:
-        force: Rebuild even if the image is present.
-    """
-    if not force:
-        # Quick check: does the image already exist locally?
-        result = subprocess.run(
-            ["docker", "images", "-q", _IMAGE_NAME],
-            capture_output=True,
-            text=True,
-        )
-        if result.stdout.strip():
-            return  # already built, nothing to do
-
-    logger.info(
-        "Building Docker image '%s' (this may take a few minutes)...",
-        _IMAGE_NAME,
-    )
-    result = subprocess.run(
-        [
-            "docker",
-            "build",
-            "-t",
-            _IMAGE_NAME,
-            "-f",
-            str(_DOCKERFILE),
-            str(_DOCKERFILE.parent),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Docker image build failed: {result.stderr.strip()}")
-    logger.info("Docker image '%s' built successfully", _IMAGE_NAME)
-
-
-def start_container(config: NodeConfig) -> str:
-    """Run a detached container for this node. Returns the container ID.
-
-    Generates an ionstart.rc file from the node config, mounts it
-    into the container, and runs ionstart so ION is ready for PyION.
+    Returns the rc file path as a handle identifying this node instance.
     """
     from backend.rc_generator import generate_rc
 
-    container_name = f"spacezilla-{config.node_id[:12]}"
-
-    # Remove any stale container with the same name from a previous run
-    subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
-
-    # Generate ionstart.rc and write to a temp file on the host.
-    # delete=False so it stays on disk while the container uses it.
     rc_content = generate_rc(config)
     rc_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".rc", prefix="ionstart_", delete=False
@@ -88,174 +36,84 @@ def start_container(config: NodeConfig) -> str:
     rc_file.close()
     logger.debug("Generated ionstart.rc at %s", rc_file.name)
 
-    result = subprocess.run(
-        [
-            "docker",
-            "run",
-            "-d",
-            "--name",
-            container_name,
-            "--cpus",
-            "1.0",
-            "--memory",
-            "512m",
-            "-e",
-            f"ION_NODE_NUMBER={config.ion_node_number}",
-            "-e",
-            f"ION_ENTITY_ID={config.ion_entity_id}",
-            "-e",
-            f"BP_ENDPOINT={config.bp_endpoint}",
-            # Mount the generated .rc file into the container
-            "-v",
-            f"{rc_file.name}:/home/ionstart.rc:ro",
-            _IMAGE_NAME,
-            # Start ION with the .rc file, then stay alive for PyION
-            "bash",
-            "-c",
-            "ionstart -I /home/ionstart.rc && tail -f /dev/null",
-        ],
-        capture_output=True,
-        text=True,
+    global _ion_process
+    _ion_process = subprocess.Popen(
+        ["ionstart", "-I", rc_file.name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"docker run failed: {result.stderr.strip() or result.stdout.strip()}"
-        )
-    return result.stdout.strip()
+
+    # Give ION a moment to initialize
+    time.sleep(2)
+
+    if _ion_process.poll() is not None:
+        _, stderr = _ion_process.communicate()
+        raise RuntimeError(f"ION failed to start: {stderr.decode().strip()}")
+
+    logger.info("ION node started (pid %s)", _ion_process.pid)
+    return rc_file.name
 
 
-def stop_container(container_id: str) -> None:
-    """Stop and remove a running container."""
-    subprocess.run(["docker", "stop", container_id], capture_output=True)
-    subprocess.run(["docker", "rm", container_id], capture_output=True)
+def stop_ion() -> None:
+    """Stop the running ION node gracefully via ionstop."""
+    global _ion_process
+
+    subprocess.run(["killm"], capture_output=True)
+
+    if _ion_process is not None:
+        _ion_process.wait(timeout=10)
+        _ion_process = None
+
+    logger.info("ION node stopped")
 
 
-def container_running(container_id: str) -> bool:
-    """Check whether the given container is currently running."""
-    result = subprocess.run(
-        [
-            "docker",
-            "inspect",
-            "-f",
-            "{{.State.Running}}",
-            container_id,
-        ],
-        capture_output=True,
-        text=True,
-    )
-    return result.returncode == 0 and result.stdout.strip() == "true"
+def ion_running() -> bool:
+    """Check whether the ION node process is still alive."""
+    if _ion_process is None:
+        return False
+    return _ion_process.poll() is None
 
 
-def _find_linux_docker_start_cmd() -> list[str] | None:
-    """Figure out how to start Docker on this Linux system.
+def apply_contact_plan(
+    config: NodeConfig,
+    peer_host: str,
+    peer_num: int,
+    peer_port: int = 4556,
+) -> None:
+    """Generate and apply a contact plan to the running ION node.
 
-    Returns the systemctl command list, or None if we can't find one.
-    Checks in order:
-      1. docker.service  (docker-ce installed)
-      2. podman.socket   (Fedora / RHEL — podman as Docker-compatible daemon)
+    Safe to call on a live node — updates outduct and plan without restart.
+    Call again with new peer info to change the link.
     """
-    for unit in ["docker.service", "podman.socket"]:
-        result = subprocess.run(
-            ["systemctl", "list-unit-files", unit],
-            capture_output=True,
-            text=True,
-        )
-        if unit in result.stdout:
-            return ["pkexec", "systemctl", "start", unit]
-    return None
+    from backend.rc_generator import generate_contact_plan
 
+    plan_content = generate_contact_plan(config, peer_host, peer_num, peer_port)
 
-def start_docker() -> DockerStatus:
-    """Try to start the Docker/Podman daemon automatically.
+    plan_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".rc", prefix="contact_plan_", delete=False
+    )
+    plan_file.write(plan_content)
+    plan_file.close()
+    logger.debug("Generated contact_plan.rc at %s", plan_file.name)
 
-    Cross-platform:
-      - Linux: starts docker.service or podman.socket via pkexec
-        (graphical password prompt)
-      - macOS: opens Docker Desktop
-      - Windows: opens Docker Desktop
-    Waits up to 20 seconds for the daemon to become ready.
-    """
-    system = platform.system()
-    try:
-        if system == "Linux":
-            cmd = _find_linux_docker_start_cmd()
-            if cmd is None:
-                return DockerStatus(
-                    available=False,
-                    reason="not_installed",
-                    message=(
-                        "No Docker or Podman service found. "
-                        "Install docker-ce or podman."
-                    ),
-                )
-            subprocess.run(cmd, check=True)
-        elif system == "Darwin":
-            subprocess.run(["open", "-a", "Docker"], check=True)
-        elif system == "Windows":
-            subprocess.run(["cmd", "/c", "start", "", "Docker Desktop"], check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return DockerStatus(
-            available=False,
-            reason="start_failed",
-            message="Could not start Docker automatically.",
-        )
+    for admin_cmd in ["ionadmin", "bpadmin", "ipnadmin"]:
+        subprocess.run([admin_cmd, plan_file.name], capture_output=True)
 
-    # The daemon takes a few seconds to initialize.
-    logger.info("Waiting for Docker daemon to start...")
-    for _ in range(10):
-        time.sleep(2)
-        logger.debug("Docker not ready yet, retrying...")
-        status = check_docker()
-        if status.available:
-            logger.info("Docker daemon is ready")
-            return status
-
-    logger.warning("Docker daemon did not start within 20 seconds")
-    return DockerStatus(
-        available=False,
-        reason="timeout",
-        message="Docker was started but isn't ready yet. Try again.",
+    logger.debug("Generated contact plan content:\n%s", plan_content)
+    print(plan_content)
+    logger.info(
+        "Contact plan applied (peer %s @ %s:%s)", peer_num, peer_host, peer_port
     )
 
 
-def check_docker() -> DockerStatus:
-    """Run `docker info` and figure out what's wrong (if anything)."""
-    result = subprocess.run(
-        ["docker", "info"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
-        return DockerStatus.ok()
-
-    # Try to give a specific reason so the UI can show a helpful message
-    stderr = result.stderr.lower()
-    if "not found" in stderr or "no such file" in stderr:
-        return DockerStatus(
-            available=False,
-            reason="missing",
-            message="Docker is not installed.",
-        )
-    if "permission denied" in stderr:
-        return DockerStatus(
-            available=False,
-            reason="permission_denied",
-            message="Docker permission denied. Add your user to the docker group.",
-        )
-    return DockerStatus(
-        available=False,
-        reason="daemon_down",
-        message="Docker daemon is not running.",
-    )
-
-
-def start_ion_logger(container_id: str) -> None:
-    """Runs 'docker exec container_id tail -f in seperate thread forever!"""
+def start_ion_logger() -> None:
+    """Tail ion.log in a background thread and forward lines to the logger."""
     ion_logger = get_logger("ion-log")
 
-    def _capture():
+    def _capture() -> None:
+        ion_log = os.path.join(os.getcwd(), "ion.log")
         process = subprocess.Popen(
-            ["docker", "exec", container_id, "tail", "-f", "/home/ion.log"],
+            ["tail", "-f", ion_log],
             stdout=subprocess.PIPE,
             text=True,
         )

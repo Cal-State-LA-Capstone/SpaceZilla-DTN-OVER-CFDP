@@ -238,12 +238,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyion"
-version = "0.2.dev0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4c/62/67329aa09d05acb2859a55d011878f198476a6f9f97274181d1108a20b81/pyion-0.02dev.tar.gz", hash = "sha256:3f0b85d47927e9fdc5aab342eec832a1e1b30ce643621de6de3bac568bee5fc4", size = 171513, upload-time = "2009-01-01T04:19:00Z" }
-
-[[package]]
 name = "pyside6"
 version = "6.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -361,7 +355,6 @@ dependencies = [
     { name = "platformdirs" },
     { name = "pydantic" },
     { name = "pydantic-core" },
-    { name = "pyion" },
     { name = "pyside6" },
     { name = "starlette" },
     { name = "typing-extensions" },
@@ -389,7 +382,6 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=4.9.4" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-core", specifier = ">=2.41.5" },
-    { name = "pyion", specifier = ">=0.2.dev0" },
     { name = "pyside6", specifier = ">=6.11.0" },
     { name = "starlette", specifier = ">=1.0.0" },
     { name = "typing-extensions", specifier = ">=4.15.0" },

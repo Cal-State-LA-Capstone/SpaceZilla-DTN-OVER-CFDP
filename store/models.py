@@ -19,14 +19,11 @@ class TransferStatus(enum.Enum):
 
 @dataclass
 class NodeMeta:
-    """Lightweight summary shown in the Node Picker list.
-
-    Stored as ``nodes/{node_id}/meta.json``.
-    """
+    """Lightweight summary shown in the Node Picker list."""
 
     node_id: str
     name: str
-    created_at: str  # ISO-8601
+    created_at: str
     last_booted: str | None = None
 
 
@@ -40,51 +37,47 @@ class RcFieldValue:
 
 @dataclass
 class NodeConfig:
-    """Full configuration needed to boot a node's Docker container.
-
-    Stored as ``nodes/{node_id}/config.json``.
-    """
+    """Full configuration needed to boot a node."""
 
     node_id: str
     name: str
     ion_node_number: int
     ion_entity_id: int
     bp_endpoint: str
+
+    # ADDED: allow multiple nodes on same host without port conflicts
+    tcp_port: int = 4556
+
     rc_fields: list[RcFieldValue] = field(default_factory=list)
 
 
 @dataclass
 class NodeState:
-    """Ephemeral runtime state for a booted node.
-
-    Stored as ``nodes/{node_id}/state.json``.
-    Written by the controller on boot, cleared on shutdown.
-    """
+    """Ephemeral runtime state for a booted node."""
 
     node_id: str
     pid: int | None = None
     ipc_port: int | None = None
-    container_id: str | None = None
-    status: str = "stopped"  # "stopped" | "booting" | "running"
+
+    # CHANGED: was "container_id"
+    # WHY: no longer using Docker — this now stores the rc file used to start ION
+    rc_file_path: str | None = None
+
+    status: str = "stopped"
 
 
 @dataclass
 class DockerStatus:
-    """Result of a Docker availability check."""
+    """DEPRECATED — kept temporarily for compatibility."""
 
     available: bool
-    reason: str  # "ok", "missing", "daemon_down", "permission_denied"
-    message: str  # human-readable explanation for the UI
-
-    @staticmethod
-    def ok() -> DockerStatus:
-        """Convenience constructor for the healthy case."""
-        return DockerStatus(available=True, reason="ok", message="Docker is ready.")
+    reason: str
+    message: str
 
 
 @dataclass
 class GlobalSettings:
-    """App-wide settings read once at boot from global/settings.json."""
+    """App-wide settings read once at boot."""
 
     theme: str = "default"
     log_level: str = "INFO"

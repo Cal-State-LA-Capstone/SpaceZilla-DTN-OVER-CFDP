@@ -1,7 +1,7 @@
 """Node Picker dialog — first window the user sees.
 
-Lists existing nodes, allows creating new ones, and checks
-Docker availability before enabling boot actions.
+Lists existing nodes, allows creating new ones, and lets
+the user boot a node into a running SpaceZilla instance.
 """
 
 from __future__ import annotations
@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import backend
 import store
 from PySide6.QtCore import QFile, QThread, Signal
 from PySide6.QtUiTools import QUiLoader
@@ -25,7 +24,7 @@ from PySide6.QtWidgets import (
     QProgressDialog,
     QSpinBox,
 )
-from store.models import DockerStatus, NodeMeta
+from store.models import NodeMeta
 from store.rc_fields import RC_FIELDS
 
 if TYPE_CHECKING:
@@ -51,28 +50,6 @@ class _BootWorker(QThread):
         self.finished.emit(result)
 
 
-def check_docker_available() -> DockerStatus:
-    """Check if Docker is running; offer to start it if not.
-
-    Calls backend.check_docker() to get the real status. If Docker
-    is down, shows a dialog asking the user whether to start it.
-    On Linux this triggers a graphical password prompt (pkexec).
-    On macOS/Windows it opens Docker Desktop.
-    """
-    status = backend.check_docker()
-    if status.available:
-        return status
-
-    reply = QMessageBox.question(
-        None,
-        "Docker Not Running",
-        f"{status.message}\n\nStart Docker now?",
-    )
-    if reply == QMessageBox.StandardButton.Yes:
-        return backend.start_docker()
-    return status
-
-
 def load_node_list() -> list[NodeMeta]:
     """Fetch all nodes from the store for display in the picker."""
     return store.list_nodes()
@@ -86,8 +63,8 @@ def open_node_picker(
     """Create and show the NodePickerDialog.
 
     Loads NodePickerDialog.ui, populates the node list,
-    runs the Docker health check, and wires button signals.
-    Boot operations run in a QThread so the GUI stays responsive.
+    and wires button signals. Boot operations run in a
+    QThread so the GUI stays responsive.
 
     Args:
         on_select: Called with node_id when user selects a node.
@@ -111,16 +88,12 @@ def open_node_picker(
 
     node_ids = [n.node_id for n in nodes]
 
-    # Docker health check (may prompt to start Docker)
-    docker_status = check_docker_available()
-    dialog.lblDockerStatus.setText(f"Docker status: {docker_status.message}")
-
     # -- Boot helper (runs in background thread) -----------------------
 
     def _start_boot(node_id, callback, cleanup_node_id=None):
         """Launch boot in a QThread with an indeterminate progress bar."""
         progress = QProgressDialog(
-            "Starting node (building image if needed)...",
+            "Starting node...",
             None,  # no cancel button
             0,
             0,  # indeterminate spinner
@@ -142,7 +115,7 @@ def open_node_picker(
                 QMessageBox.warning(
                     dialog,
                     "Boot Failed",
-                    "Could not start the node. Check Docker status.",
+                    "Could not start the node. Check the logs for details.",
                 )
 
         worker.finished.connect(_on_done)
@@ -201,7 +174,7 @@ def open_node_picker(
 
     def _on_selection_changed():
         has_selection = dialog.listNodes.currentRow() >= 0
-        dialog.btnBootNode.setEnabled(has_selection and docker_status.available)
+        dialog.btnBootNode.setEnabled(has_selection)
 
     def _on_boot_clicked():
         row = dialog.listNodes.currentRow()

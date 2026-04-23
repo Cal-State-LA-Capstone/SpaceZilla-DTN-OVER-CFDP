@@ -17,7 +17,6 @@ dependencies = [
     "platformdirs>=4.9.4",
     "pydantic>=2.12.5",
     "pydantic-core>=2.41.5",
-    "pyion>=0.2.dev0",
     "pyside6>=6.11.0",
     "starlette>=1.0.0",
     "typing-extensions>=4.15.0",
@@ -35,6 +34,8 @@ dev = [
 target-version = "py313"
 line-length = 88
 src = ["backend", "scripts", "tests", "runtime_logger"]
+
+
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I"]
