@@ -73,7 +73,8 @@ def ion_running() -> bool:
         return False
     return _ion_process.poll() is None
 
-
+# Not in use for now
+'''
 def apply_contact_plan(
     config: NodeConfig,
     peer_host: str,
@@ -104,8 +105,8 @@ def apply_contact_plan(
     logger.info(
         "Contact plan applied (peer %s @ %s:%s)", peer_num, peer_host, peer_port
     )
-
-
+'''
+## TODO: Cleanly shut down after process ends. No hanging process
 def start_ion_logger() -> None:
     """Tail ion.log in a background thread and forward lines to the logger."""
     ion_logger = get_logger("ion-log")

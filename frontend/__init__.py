@@ -27,7 +27,7 @@ def show_node_picker(
     open_node_picker(on_select=on_select, on_create=on_create)
 
 
-def show_main_window(node_id: str, ipc_port: int, node_config) -> None:
+def show_main_window(node_id: str, ipc_port: int) -> None:
     """Switch from the Node Picker to the main SpaceZilla window.
 
     Args:
@@ -53,14 +53,6 @@ def show_main_window(node_id: str, ipc_port: int, node_config) -> None:
 
         window = MainWindow()
 
-        # ============================
-        # CHANGED: initialize contacts properly
-        # ============================
-        # WHY:
-        # Contacts now require datastore + config to function.
-        # This ensures UI loads real contacts and can apply contact plans.
-        window.init_contacts(node_id, node_config)
-
     finally:
         os.chdir(original_cwd)
 
@@ -73,9 +65,9 @@ def show_main_window(node_id: str, ipc_port: int, node_config) -> None:
 
 def teardown() -> None:
     """Close all windows and release Qt resources."""
+    # Changed it so cleanly closes down all windows
     for window in _windows:
         try:
-            # CHANGED: support wrapper objects
             if hasattr(window, "close") and callable(window.close):
                 window.close()
             elif hasattr(window, "window") and hasattr(window.window, "close"):

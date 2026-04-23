@@ -172,7 +172,7 @@ class Controller:
             2. Start the ION node process directly on the host.
             3. Start the ION log capture thread.
             4. Start a local IPC server so the GUI can talk to the controller.
-            5. Write the runtime state (PID, port, rc path) to disk.
+            5. Write the runtime state (PID, port) to disk.
 
         Note: connect() must be called separately from the main thread
         after boot() returns, because pyion requires the main thread.
@@ -201,15 +201,12 @@ class Controller:
 
             logger.info("IPC server listening on 127.0.0.1:%s", self._ipc_port)
 
-            
             store.save_state(
                 node_id,
                 NodeState(
                     node_id=node_id,
                     pid=os.getpid(),
                     ipc_port=self._ipc_port,
-                    #dockerless now
-                    rc_file_path=self._ion_rc,
                     status="running",
                 ),
             )
@@ -261,7 +258,6 @@ class Controller:
         backend.stop_ion()
         logger.info("ION node stopped")
 
-        
         if self._node_id is not None:
             store.save_state(
                 self._node_id,
