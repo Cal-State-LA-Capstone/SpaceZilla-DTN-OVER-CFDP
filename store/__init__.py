@@ -6,6 +6,7 @@ Every write function takes ``node_id`` explicitly so the
 
 from store.globals import load_settings, load_theme
 from store.models import (
+    Contact, #added
     DockerStatus,
     GlobalSettings,
     NodeConfig,
@@ -22,6 +23,8 @@ from store.nodes import (
     load_meta,
     load_state,
     save_config,
+    save_contacts,
+    load_contacts,
     save_meta,
     save_state,
 )
@@ -37,6 +40,9 @@ from store.paths import (
 )
 
 __all__ = [
+    "Contact",
+    "load_contacts",
+    "save_contacts",
     "DockerStatus",
     "GlobalSettings",
     "NodeConfig",

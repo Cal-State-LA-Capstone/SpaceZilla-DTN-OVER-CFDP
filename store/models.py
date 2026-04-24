@@ -67,6 +67,17 @@ class NodeState:
     container_id: str | None = None
     status: str = "stopped"  # "stopped" | "booting" | "running"
 
+# For Contact_List
+@dataclass
+class Contact:
+    """Saved per-node contact entry."""
+
+    id: str
+    name: str
+    peer_entity_num: int
+    peer_host: str
+    peer_port: int = 4556 
+    remote_dest_dir: str = "/tmp" 
 
 @dataclass
 class DockerStatus:

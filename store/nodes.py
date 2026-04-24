@@ -15,7 +15,8 @@ from datetime import datetime, timezone
 from store.models import NodeConfig, NodeMeta, NodeState, RcFieldValue
 from store.paths import node_config_path, node_dir, node_meta_path, node_state_path
 from store.paths import nodes_dir as get_nodes_dir
-
+from store.models import Contact
+from store.paths import node_contacts_path
 
 def list_nodes() -> list[NodeMeta]:
     """Scan the nodes/ directory and return a NodeMeta for each one."""
@@ -121,3 +122,19 @@ def delete_node(node_id: str) -> bool:
         shutil.rmtree(ndir)
         return True
     return False
+
+def load_contacts(node_id: str) -> list[Contact]:
+    """Read and return a node's contacts.json."""
+    path = node_contacts_path(node_id)
+
+    if not path.exists():
+        return []
+
+    data = json.loads(path.read_text())
+    return [Contact(**c) for c in data]
+
+
+def save_contacts(node_id: str, contacts: list[Contact]) -> None:
+    """Write contacts.json for the given node."""
+    path = node_contacts_path(node_id)
+    path.write_text(json.dumps([asdict(c) for c in contacts], indent=2) + "\n")
