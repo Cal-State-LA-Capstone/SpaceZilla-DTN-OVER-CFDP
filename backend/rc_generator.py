@@ -14,11 +14,76 @@ from __future__ import annotations
 
 from store.models import NodeConfig
 
-# Bare minimum template for a single ION node running BP (TCP) and CFDP.
-# Placeholders: {node_num}, {entity_id}
+# -----------------------------------------------------------------------------
+# ORIGINAL TEMPLATE (commented out for now)
+# -----------------------------------------------------------------------------
+# CHANGED:
+# Keeping the original startup template here for reference, but disabling it
+# during the current hardcoded send test phase.
+# WHY:
+# Right now you want one known-good startup config to prove host-based sending
+# works before making rc generation dynamic again.
+#
+# _RC_TEMPLATE = """\
+# ## begin ionadmin
+# 1 {node_num} ''
+# s
+# m production 1000000
+# m consumption 1000000
+# m horizon +0
+# ## end ionadmin
+#
+# ## begin ionsecadmin
+# 1
+# ## end ionsecadmin
+#
+# ## begin bpadmin
+# 1
+# a scheme ipn 'ipnfw' 'ipnadminep'
+# a endpoint ipn:{node_num}.0 q
+# a endpoint ipn:{node_num}.1 q
+# a endpoint ipn:{node_num}.2 q
+# a endpoint ipn:{node_num}.64 q
+# a endpoint ipn:{node_num}.65 q
+# a protocol tcp 1400 100
+# a induct tcp 0.0.0.0:4556 tcpcli
+# s
+# ## end bpadmin
+#
+# ## begin ipnadmin
+# ## end ipnadmin
+#
+# ## begin cfdpadmin
+# 1
+# a entity {entity_id} bp ipn:{entity_id}.64 1 0 0
+# s bputa
+# ## end cfdpadmin
+# """
+
+# -----------------------------------------------------------------------------
+# TEMPORARY HARDCODED STARTUP TEMPLATE
+# -----------------------------------------------------------------------------
+# CHANGED:
+# This template is intentionally hardcoded for the current local send test.
+# WHY:
+# You want one deterministic known-good config before returning to dynamic
+# generation and contact-plan/UI integration.
+#
+# Assumptions for this temporary template:
+# - App-controlled node is node 1 / entity 1
+# - Peer is node 2 on localhost
+# - Peer listens on TCP port 4557
+# - Local node listens on TCP port 4556
+#
+# NOTE:
+# This is temporary test scaffolding, not the final architecture.
 _RC_TEMPLATE = """\
 ## begin ionadmin
-1 {node_num} ''
+1 1 ''
+a contact +1 +3600 1 2 100000
+a contact +1 +3600 2 1 100000
+a range +1 +3600 1 2 1
+a range +1 +3600 2 1 1
 s
 m production 1000000
 m consumption 1000000
@@ -32,88 +97,39 @@ m horizon +0
 ## begin bpadmin
 1
 a scheme ipn 'ipnfw' 'ipnadminep'
-a endpoint ipn:{node_num}.0 q
-a endpoint ipn:{node_num}.1 q
-a endpoint ipn:{node_num}.2 q
-a endpoint ipn:{node_num}.64 q
-a endpoint ipn:{node_num}.65 q
+a endpoint ipn:1.0 q
+a endpoint ipn:1.1 q
+a endpoint ipn:1.2 q
+a endpoint ipn:1.64 q
+a endpoint ipn:1.65 q
 a protocol tcp 1400 100
 a induct tcp 0.0.0.0:4556 tcpcli
+a outduct tcp 127.0.0.1:4557 ''
 s
 ## end bpadmin
 
 ## begin ipnadmin
+a plan 2 tcp/127.0.0.1:4557
 ## end ipnadmin
 
 ## begin cfdpadmin
 1
-a entity {entity_id} bp ipn:{entity_id}.64 1 0 0
+a entity 1 bp ipn:1.64 1 0 0
 s bputa
 ## end cfdpadmin
 """
 
-# Contact plan template — applied live when a contact is added.
-# Placeholders: {node_num}, {peer_num}, {peer_host}, {peer_port}, {peer_eid}
-_CONTACT_PLAN_TEMPLATE = """\
-## begin ionadmin
-a contact +1 +3600 {node_num} {peer_num} 100000
-a contact +1 +3600 {peer_num} {node_num} 100000
-a range +1 +3600 {node_num} {peer_num} 1
-a range +1 +3600 {peer_num} {node_num} 1
-## end ionadmin
-
-## begin bpadmin
-a outduct tcp {peer_host}:{peer_port} ''
-## end bpadmin
-
-## begin ipnadmin
-# CHANGED:
-# Use a full EID, not a bare node number.
-# WHY:
-# ION rejected lines like `a plan 2 tcp/localhost:4557` with
-# "Malformed EID: 2". ipnadmin expects a valid EID target.
-a plan {peer_eid} tcp/{peer_host}:{peer_port}
-## end ipnadmin
-"""
-
-# Contact removal template — applied live when a contact is removed.
-# Placeholders: {node_num}, {peer_num}, {peer_host}, {peer_port}, {peer_eid}
-_REMOVE_CONTACT_TEMPLATE = """\
-## begin ionadmin
-d contact +1 {node_num} {peer_num}
-d contact +1 {peer_num} {node_num}
-d range +1 {node_num} {peer_num}
-d range +1 {peer_num} {node_num}
-## end ionadmin
-
-## begin bpadmin
-d outduct tcp {peer_host}:{peer_port}
-## end bpadmin
-
-## begin ipnadmin
-# CHANGED:
-# Delete the same full EID-based plan we added.
-# WHY:
-# Keep add/remove symmetrical and valid for ipnadmin.
-d plan {peer_eid}
-## end ipnadmin
-"""
-
 
 def generate_rc(config: NodeConfig) -> str:
-    """Fill in the ionstart.rc template from a node's config.
+    """Return a temporary hardcoded startup rc for send testing.
 
-    Returns the file content as a string. Written to a temp file
-    and passed to ionstart on boot.
+    CHANGED:
+    This currently ignores NodeConfig values.
+    WHY:
+    The current goal is to prove one deterministic send path works before
+    restoring dynamic config generation.
     """
-    fields = {f.name: f.value for f in config.rc_fields}
-    node_num = fields.get("node_number", config.ion_node_number)
-    entity_id = fields.get("entity_id", config.ion_entity_id)
-
-    return _RC_TEMPLATE.format(
-        node_num=node_num,
-        entity_id=entity_id,
-    )
+    return _RC_TEMPLATE
 
 
 def generate_contact_plan(

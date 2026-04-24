@@ -41,7 +41,7 @@ def main() -> None:
         # CHANGED: added ctrl._config
         frontend.show_main_window(
             ctrl._node_id,
-            ctrl._ipc_port
+            ctrl._ipc_port,
         )
 
         app.exec()

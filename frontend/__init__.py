@@ -59,6 +59,7 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
     window.node_id = node_id
     window.ipc_port = ipc_port
 
+    window.load_contacts_from_ipc()
     window.show()
     _windows.append(window)
 

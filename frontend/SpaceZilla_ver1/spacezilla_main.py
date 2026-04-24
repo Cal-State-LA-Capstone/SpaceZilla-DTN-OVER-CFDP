@@ -10,14 +10,12 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QHeaderView
 import subprocess
 import os
+import requests
 
 loader = QUiLoader()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# CHANGED:
 # Load UI files relative to this Python file instead of current working directory.
-# WHY:
-# This is safer and avoids file resolution issues when the app changes cwd.
 def load_ui(ui_file: str):
     ui_path = os.path.join(BASE_DIR, ui_file)
     file = QFile(ui_path)
@@ -36,12 +34,10 @@ def load_ui(ui_file: str):
 
     return window
 
-
 class MainWindow:
     def __init__(self):
         self.window = load_ui("SpaceZilla_ver0.ui")
         self.window.setWindowTitle("SpaceZilla")
-
         # File Explorer
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.rootPath())
@@ -98,6 +94,7 @@ class MainWindow:
         self.destination_filter.textChanged.connect(self.filter_contacts)
         self.add_contact_btn.clicked.connect(self.open_add_contact)
 
+        
         # Default: Light Mode
         self.dark_mode = False
 
@@ -163,8 +160,7 @@ class MainWindow:
     def show(self):
         self.window.show()
 
-    # ADDED:
-    # Give the wrapper a close() so frontend.teardown() can safely call it.
+    # Gives the wrapper a close() so frontend.teardown() can safely call it.
     def close(self):
         self.window.close()
 
@@ -291,7 +287,31 @@ class MainWindow:
             "destination": destination,
             "status": status_button,
             "widget": row_widget
+        
+        
         })
+        # TEMPORARY HARDCODED SEND VIA IPC
+        if hasattr(self, "selected_file_path"):
+            try:
+                queue_result = requests.post(
+                    f"http://127.0.0.1:{self.ipc_port}/queue",
+                    json=[self.selected_file_path],
+                ).json()
+                print(f"QUEUE RESULT: {queue_result}")
+
+                send_result = requests.post(
+                    f"http://127.0.0.1:{self.ipc_port}/send"
+                ).json()
+                print(f"SEND RESULT: {send_result}")
+
+                if send_result.get("ok"):
+                    status_button.setText("SENT")
+                else:
+                    status_button.setText("FAILED")
+
+            except Exception as e:
+                print(f"SEND ERROR: {e}")
+                status_button.setText("ERROR")
 
     # Handles QUEUE
     def handle_file_send(self):
@@ -410,11 +430,8 @@ class MainWindow:
                 item["widget"].setVisible(False)
 
     # CONTACT
-    # CHANGED:
     # Updated to match the newer Contact_Info_Edit.ui fields:
-    #   contact_name, contact_entity, contact_host, contact_port
-    # WHY:
-    # The old code expected contact_address, which no longer exists.
+    # contact_name, contact_entity, contact_host, contact_port
     def open_add_contact(self):
         typed_text = self.destination_filter.text().strip()
         self.contact_edit_window = load_ui("Contact_Info_Edit.ui")
@@ -463,11 +480,27 @@ class MainWindow:
         except ValueError:
             peer_port = 4556
 
-        self.add_to_contact_list(name, host, peer_num, peer_port)
-        self.contact_edit_window.close()
-        self.destination_filter.clear()
+        try:
+            result = requests.post(
+                f"http://127.0.0.1:{self.ipc_port}/contacts",
+                params={
+                    "name": name,
+                    "peer_entity_num": peer_num,
+                    "peer_host": host,
+                    "peer_port": peer_port,
+                },
+            ).json()
 
-    # CHANGED:
+            print("ADD CONTACT RESULT:", result)
+
+            if result.get("ok"):
+                self.load_contacts_from_ipc()
+                self.contact_edit_window.close()
+                self.destination_filter.clear()
+
+        except Exception as e:
+            print(f"Failed to save contact: {e}")
+
     # Keep the original simple row UI, but also store peer_num/peer_port in memory.
     def add_to_contact_list(self, name, address, peer_num=0, peer_port=4556):
         row_widget = QWidget()
@@ -503,7 +536,6 @@ class MainWindow:
         name_label.mousePressEvent = lambda event: self.select_contact(address)
         address_label.mousePressEvent = lambda event: self.select_contact(address)
 
-    # CHANGED:
     # Updated edit dialog to match the newer Contact_Info_Edit.ui field names.
     def open_edit_contact(self, name_label, address_label, row_widget, peer_num=0, peer_port=4556):
         self.contact_edit_window = load_ui("Contact_Info_Edit.ui")
@@ -534,8 +566,8 @@ class MainWindow:
         button_box.rejected.connect(self.contact_edit_window.close)
         self.contact_edit_window.show()
 
-    # CHANGED:
     # Updated to persist edits from the newer UI fields into the in-memory fake contact list.
+    # Doesn't actually get saved though
     def update_contact(self, name_box, host_box, entity_box, port_box, name_label, address_label, row_widget):
         name = name_box.text().strip()
         address = host_box.text().strip()
@@ -581,6 +613,7 @@ class MainWindow:
         self.confirm_window.show()
 
     # Actually performs the deletion after confirmation
+    # Doesn't delete from json
     def _do_delete_contact(self, row_widget):
         row_widget.setParent(None)
         self.contacts = [c for c in self.contacts if c["widget"] != row_widget]
@@ -598,7 +631,40 @@ class MainWindow:
     def select_contact(self, address):
         self.destination_filter.setText(address)
         self.selected_destination = address
+    
+    # Should load all contacts on startup
+    def load_contacts_from_ipc(self):
+        try:
+            data = requests.get(
+                f"http://127.0.0.1:{self.ipc_port}/contacts"
+            ).json()
 
+            self.refresh_contact_list(data.get("contacts", []))
+            print("Loaded contacts:", data)
+        except Exception as e:
+            print(f"Failed to load contacts: {e}")
+    
+    
+    def refresh_contact_list(self, server_contacts):
+        # clear UI
+        while self.contact_layout.count():
+            item = self.contact_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+
+        self.contacts = []
+
+        for c in server_contacts:
+            self.add_to_contact_list(
+                name=c["name"],
+                address=c["peer_host"],
+                peer_num=c["peer_entity_num"],
+                peer_port=c["peer_port"],
+            )
+        self.contact_container.adjustSize()
+        self.contact_container.update()
+        self.contact_area.update()
 
 if __name__ == "__main__":
     app = QApplication([])
