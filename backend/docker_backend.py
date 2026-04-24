@@ -170,6 +170,8 @@ def start_container(config: NodeConfig) -> tuple[str, int]:
             "1.0",
             "--memory",
             "512m",
+            # Allow container to reach the host machine as host.docker.internal
+            "--add-host=host.docker.internal:host-gateway",
             # Forward ion_server HTTP port
             "-p",
             f"{ion_server_port}:8765",

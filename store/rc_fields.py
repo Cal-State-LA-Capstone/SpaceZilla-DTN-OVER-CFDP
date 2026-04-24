@@ -45,4 +45,10 @@ RC_FIELDS: list[RcFieldSpec] = [
         "type": "int",
         "default": 1,
     },
+    {
+        "name": "peer_address",
+        "label": "Peer Address (IP:Port)",
+        "type": "str",
+        "default": "127.0.0.1:1113",
+    },
 ]

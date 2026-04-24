@@ -272,7 +272,7 @@ class TransferBackend:
 
                 ok, msg = self.adapter.send_file(
                     source_file=path,
-                    dest_file=f"/SZ_received_files/{file_name}",
+                    dest_file=file_name,
                     mode=0,
                 )
 

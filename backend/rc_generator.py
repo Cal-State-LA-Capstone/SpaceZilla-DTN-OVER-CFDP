@@ -13,21 +13,23 @@ from __future__ import annotations
 from store.models import NodeConfig
 
 # Minimal template for a single ION node running BP (LTP) and CFDP.
-# Placeholders: {node_num}, {entity_id}, {service_count}
+# Placeholders: {node_num}, {entity_id}, {peer_address}
+# peer_address is where LTP sends outgoing packets (the remote node's IP:port).
+# entity_id is the CFDP/BP node number of the destination (equals node_num for loopback).
 _RC_TEMPLATE = """\
 ## begin ionadmin
 1 {node_num} ''
 s
-a contact +1 +3600 {node_num} {node_num} 100000
-a range +1 +3600 {node_num} {node_num} 0
+a contact +1 +3600 {node_num} {entity_id} 100000
+a range +1 +3600 {node_num} {entity_id} 0
 m production 1000000
 m consumption 1000000
 ## end ionadmin
 
 ## begin ltpadmin
 1 32
-a span {node_num} 32 32 1400 10000 1 'udplso 127.0.0.1:1113'
-s 'udplsi 127.0.0.1:1113'
+a span {entity_id} 32 32 1400 10000 1 'udplso {peer_address}'
+s 'udplsi 0.0.0.0:1113'
 ## end ltpadmin
 
 ## begin bpadmin
@@ -39,17 +41,17 @@ a endpoint ipn:{node_num}.64 q
 a endpoint ipn:{node_num}.65 q
 a protocol ltp 1400 100
 a induct ltp {node_num} ltpcli
-a outduct ltp {node_num} ltpclo
+a outduct ltp {entity_id} ltpclo
 s
 ## end bpadmin
 
 ## begin ipnadmin
-a plan {node_num} ltp/{node_num}
+a plan {entity_id} ltp/{entity_id}
 ## end ipnadmin
 
 ## begin cfdpadmin
 1
-a entity {node_num} bp ipn:{node_num}.64 1 0 0
+a entity {entity_id} bp ipn:{entity_id}.64 1 0 0
 s bputa
 ## end cfdpadmin
 """
@@ -64,10 +66,10 @@ def generate_rc(config: NodeConfig) -> str:
     fields = {f.name: f.value for f in config.rc_fields}
     node_num = fields.get("node_number", config.ion_node_number)
     entity_id = fields.get("entity_id", config.ion_entity_id)
-    service_count = fields.get("service_count", 1)
+    peer_address = fields.get("peer_address", "127.0.0.1:1113")
 
     return _RC_TEMPLATE.format(
         node_num=node_num,
         entity_id=entity_id,
-        service_count=service_count,
+        peer_address=peer_address,
     )
