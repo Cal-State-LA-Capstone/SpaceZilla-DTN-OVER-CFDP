@@ -18,13 +18,25 @@ _RC_TEMPLATE = """\
 ## begin ionadmin
 1 {node_num} ''
 s
+a contact +1 +3600 {node_num} {node_num} 100000
+a range +1 +3600 {node_num} {node_num} 0
+m production 1000000
+m consumption 1000000
 ## end ionadmin
+
+## begin ltpadmin
+1 32
+a span {node_num} 32 32 1400 10000 1 'udplso 127.0.0.1:1113'
+s 'udplsi 127.0.0.1:1113'
+## end ltpadmin
 
 ## begin bpadmin
 1
 a scheme ipn 'ipnfw' 'ipnadminep'
-a endpoint ipn:{node_num}.0 x
-a endpoint ipn:{node_num}.1 x
+a endpoint ipn:{node_num}.0 q
+a endpoint ipn:{node_num}.1 q
+a endpoint ipn:{node_num}.64 q
+a endpoint ipn:{node_num}.65 q
 a protocol ltp 1400 100
 a induct ltp {node_num} ltpcli
 a outduct ltp {node_num} ltpclo
@@ -37,6 +49,7 @@ a plan {node_num} ltp/{node_num}
 
 ## begin cfdpadmin
 1
+a entity {node_num} bp ipn:{node_num}.64 1 0 0
 s bputa
 ## end cfdpadmin
 """

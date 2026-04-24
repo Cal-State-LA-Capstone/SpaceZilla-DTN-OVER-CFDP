@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 import httpx
-from PySide6.QtCore import QFileInfo
+from PySide6.QtCore import QFileInfo, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QDialog,
@@ -30,6 +30,11 @@ class QueueMapping:
 
         # Wire UI buttons to controller methods.
         self.ui.file_send.clicked.connect(self.send_action)
+
+        # Poll the backend every 2 seconds to sync queue status with the UI.
+        self._poll_timer = QTimer()
+        self._poll_timer.timeout.connect(self._poll_queue)
+        self._poll_timer.start(2000)
 
     def _url(self, path: str) -> str:
         return f"http://127.0.0.1:{self.ipc_port}{path}"
@@ -174,6 +179,17 @@ class QueueMapping:
             "status_button": status_button,
             "widget": row_widget,
         })
+
+    def _poll_queue(self) -> None:
+        """Fetch current queue state from the backend and update status buttons."""
+        if not self.ui.queue_items:
+            return
+        try:
+            response = httpx.get(self._url("/queue"), timeout=2)
+            for item in response.json().get("queue", []):
+                self.on_status_change(item["id"], item["status"])
+        except Exception:
+            pass
 
     # -----------------------------------------------------------------------
     # Private

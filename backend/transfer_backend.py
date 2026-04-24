@@ -40,6 +40,7 @@ class TransferBackend:
         node_number: int,
         entity_id: int,
         bp_endpoint: str,
+        container_port: int | None = None,
     ) -> tuple[bool, str]:
         """
         This sets up the connection between nodes.
@@ -50,6 +51,7 @@ class TransferBackend:
             local_node=node_number,
             local_eid=bp_endpoint,
             peer_entity_nbr=entity_id,
+            container_port=container_port,
         )
 
     def disconnect(self) -> tuple[bool, str]:
@@ -207,18 +209,18 @@ class TransferBackend:
             if "FINISHED" in event_name:
                 if hasattr(event, "condition_code") and event.condition_code != 0:
                     self._update_status(queue_id, "Failed")
-                    if self._parser: self._parser.log_transfer_event("error",
-                                                                     file_name, "2")
+                    if self.parser: self.parser.log_transfer_event("error",
+                                                                    file_name, "2")
                 else:
                     self._update_status(queue_id, "Completed")
-                    if self._parser: self._parser.log_transfer_event("finished",
-                                                                     file_name, "2")
+                    if self.parser: self.parser.log_transfer_event("finished",
+                                                                   file_name, "2")
 
             elif "FAULT" in event_name or "ABANDONED" in event_name:
 
                 self._update_status(queue_id, "Failed")
-                if self._parser: self._parser.log_transfer_event("error",
-                                                                 file_name, "2")
+                if self.parser: self.parser.log_transfer_event("error",
+                                                               file_name, "2")
             elif "SUSPENDED" in event_name:
                 self._update_status(queue_id, "Queued")
             elif "RESUMED" in event_name:
@@ -253,9 +255,9 @@ class TransferBackend:
                 self.active_id = queue_id
 
             self._update_status(queue_id, "Running")
-            if self._parser:
-                self._parser.set_current_file(file_name)
-                self._parser.log_transfer_event("started", file_name, "2")
+            if self.parser:
+                self.parser.set_current_file(file_name)
+                self.parser.log_transfer_event("started", file_name, "2")
 
             try:
                 ok, msg = self.adapter.register_event_handler(

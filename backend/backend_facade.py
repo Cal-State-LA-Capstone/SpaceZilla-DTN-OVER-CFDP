@@ -17,11 +17,13 @@ class BackendFacade:
         node_number: int,
         entity_id: int,
         bp_endpoint: str,
+        container_port: int | None = None,
     ) -> tuple[bool, str]:
         return self.transfer_backend.connect(
             node_number=node_number,
             entity_id=entity_id,
             bp_endpoint=bp_endpoint,
+            container_port=container_port,
         )
 
     # disconnects the backend

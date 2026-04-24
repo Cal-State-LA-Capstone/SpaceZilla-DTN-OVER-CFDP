@@ -69,6 +69,11 @@ RUN cd "${PYION_HOME}" && \
 # Now that pyion is installed, it’s safe to set LD_LIBRARY_PATH for runtime.
 ENV LD_LIBRARY_PATH="/usr/local/lib"
 
+# =====================================================
+# Install ion_server HTTP bridge dependencies
+# =====================================================
+RUN pip3 install fastapi uvicorn
+
 # Make PID1 sane inside Docker (signal forwarding/reaping)
 ENTRYPOINT ["/usr/bin/tini","--"]
 

@@ -135,14 +135,15 @@ class Controller:
             # Build the Docker image if it doesn't exist yet
             backend.build_image()
 
-            self._container_id = backend.start_container(self._config)
-            logger.info("Container started: %s", self._container_id)
-            
+            self._container_id, container_port = backend.start_container(self._config)
+            logger.info("Container started: %s (ion_server port %s)", self._container_id, container_port)
+
             ok, msg = facade.connect(
                 node_number=self._config.ion_node_number,
                 entity_id=self._config.ion_entity_id,
                 bp_endpoint=self._config.bp_endpoint,
-                )
+                container_port=container_port,
+            )
             logger.info("Backend connect: ok=%s msg=%s", ok, msg)
 
             # logger.info("Capturing ion.log")
