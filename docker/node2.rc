@@ -1,0 +1,42 @@
+## begin ionadmin
+1 2 ''
+a contact +1 +3600 2 1 100000
+a contact +1 +3600 1 2 100000
+a range +1 +3600 2 1 1
+a range +1 +3600 1 2 1
+s
+m production 1000000
+m consumption 1000000
+m horizon +0
+## end ionadmin
+
+## begin ionsecadmin
+1
+## end ionsecadmin
+
+## begin bpadmin
+1
+a scheme ipn 'ipnfw' 'ipnadminep'
+
+a endpoint ipn:2.0 q
+a endpoint ipn:2.1 q
+a endpoint ipn:2.2 q
+a endpoint ipn:2.64 q
+a endpoint ipn:2.65 q
+
+a protocol tcp 1400 100
+a induct tcp 0.0.0.0:4557 tcpcli
+a outduct tcp 172.17.0.1:4556 ''
+
+s
+## end bpadmin
+
+## begin ipnadmin
+a plan 1 tcp/172.17.0.1:4556
+## end ipnadmin
+
+## begin cfdpadmin
+1
+a entity 2 bp ipn:2.64 1 0 0
+s bputa
+## end cfdpadmin
