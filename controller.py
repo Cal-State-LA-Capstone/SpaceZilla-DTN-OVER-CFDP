@@ -27,6 +27,8 @@ from backend.facade import BackendFacade
 from fastapi import FastAPI
 from runtime_logger import get_logger
 from store.models import NodeState
+import uuid
+from store.models import Contact
 
 if TYPE_CHECKING:
     from store.models import NodeConfig
@@ -72,7 +74,9 @@ def is_connected() -> dict:
 
 @ipc_app.post("/queue")
 def queue_files(file_paths: list[str]) -> dict:
+    print(f"IPC /queue: connected={_facade.is_connected()}, file_paths={file_paths}")
     ids = _facade.queue_files(file_paths)
+    print(f"IPC /queue result: ids={ids}")
     return {"queue_ids": ids}
 
 
@@ -95,7 +99,9 @@ def get_queue() -> dict:
 
 @ipc_app.post("/send")
 def send_files() -> dict:
+    print(f"IPC /send: connected={_facade.is_connected()}")
     ok, msg = _facade.send_files()
+    print(f"IPC /send result: ok={ok}, msg={msg}")
     return {"ok": ok, "message": msg}
 
 
@@ -132,6 +138,57 @@ def contact_plan(peer_host: str, peer_num: int, peer_port: int = 4556) -> dict:
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "message": str(e)}
+    
+@ipc_app.get("/contacts")
+def get_contacts() -> dict:
+    if _controller is None or _controller._node_id is None:
+        return {"contacts": []}
+
+    contacts = store.load_contacts(_controller._node_id)
+    return {"contacts": [c.__dict__ for c in contacts]}
+
+
+@ipc_app.post("/contacts")
+def add_contact(
+    name: str,
+    peer_entity_num: int,
+    peer_host: str,
+    peer_port: int = 4556,
+    remote_dest_dir: str = "/tmp",
+) -> dict:
+    if _controller is None or _controller._node_id is None:
+        return {"ok": False, "message": "controller not ready"}
+
+    contacts = store.load_contacts(_controller._node_id)
+
+    contact = Contact(
+        id=uuid.uuid4().hex,
+        name=name,
+        peer_entity_num=peer_entity_num,
+        peer_host=peer_host,
+        peer_port=peer_port,
+        remote_dest_dir=remote_dest_dir,
+    )
+
+    contacts.append(contact)
+    store.save_contacts(_controller._node_id, contacts)
+
+    return {"ok": True, "contact": contact.__dict__}
+
+
+@ipc_app.delete("/contacts/{contact_id}")
+def delete_contact(contact_id: str) -> dict:
+    if _controller is None or _controller._node_id is None:
+        return {"ok": False, "message": "controller not ready"}
+
+    contacts = store.load_contacts(_controller._node_id)
+    new_contacts = [c for c in contacts if c.id != contact_id]
+
+    if len(new_contacts) == len(contacts):
+        return {"ok": False, "message": "contact not found"}
+
+    store.save_contacts(_controller._node_id, new_contacts)
+    return {"ok": True}
 
 
 # -- Controller --------------------------------------------------------------
@@ -224,13 +281,30 @@ class Controller:
         Must be called from the main thread — pyion uses Python signals
         internally which only work on the main thread.
         """
+
+        
         if self._config is None:
             return False, "not booted"
+        
+        # Hardcoded facade connect
+        local_node = self._config.ion_node_number
+        peer_entity_id = 2 if local_node == 1 else 1
+        bp_endpoint = f"ipn:{local_node}.1"
+
+        print(f"Controller.connect -> node={local_node}, peer_entity={peer_entity_id}, bp_endpoint={bp_endpoint}")
+        return _facade.connect(
+            node_number=local_node,
+            entity_id=peer_entity_id,
+            bp_endpoint=bp_endpoint,
+        )
+    
+        '''
         return _facade.connect(
             node_number=self._config.ion_node_number,
             entity_id=self._config.ion_entity_id,
             bp_endpoint=self._config.bp_endpoint,
         )
+        '''
 
     def spawn_peer(self) -> None:
         """Open a brand-new SpaceZilla process for a second node.
