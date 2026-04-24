@@ -186,6 +186,7 @@ class TransferBackend:
     def _make_event_handler(self, queue_id: str):
         def handler(event):
             event_name = str(event)
+            print(f"[DEBUG] EVENT queue_id={queue_id}: {event_name}")
 
             if "FINISHED" in event_name:
                 if hasattr(event, "condition_code") and event.condition_code != 0:
@@ -234,6 +235,8 @@ class TransferBackend:
                     "CFDP_ALL_EVENTS",
                     self._make_event_handler(queue_id),
                 )
+                print(f"[DEBUG] REGISTER_HANDLER {file_name}: ok={ok}, msg={msg}")
+
                 if not ok:
                     self._update_status(queue_id, "Failed")
                     with self.active_lock:
@@ -245,13 +248,18 @@ class TransferBackend:
                     dest_file=f"/SZ_received_files/{file_name}",
                     mode=0,
                 )
+                print(f"[DEBUG] SEND {file_name}: ok={ok}, msg={msg}")
 
                 if not ok:
                     self._update_status(queue_id, "Failed")
                 else:
-                    ok, msg = self.adapter.wait_for_transaction_end()
+                    print(f"[DEBUG] about to wait for transaction end: {file_name}")
+                    ok, msg = self.adapter.wait_for_transaction_end(timeout=10)
+                    print(f"[DEBUG] WAIT {file_name}: ok={ok}, msg={msg}")
 
-                    if not ok and self.status_indicator() != "Canceled":
+                    if ok:
+                        self._update_status(queue_id, "Completed")
+                    elif self.status_indicator() != "Canceled":
                         self._update_status(queue_id, "Failed")
 
             except Exception as e:
@@ -260,3 +268,6 @@ class TransferBackend:
 
             with self.active_lock:
                 self.active_id = None
+
+        # clear thread reference when processing is done
+        self.send_thread = None
