@@ -13,7 +13,7 @@ dev branch naming convention:
 ### Prerequisites
 
 - **Python 3.13+**
-- **PyION & ION** - Install via (Installation Guide)[https://github.com/NASA-Protocol-Exploits/handbook/blob/main/docs/learning/training/pyion/installing-pyion.md]
+- **PyION & ION** - Install via [Installation Guide](https://github.com/NASA-Protocol-Exploits/handbook/blob/main/docs/learning/training/pyion/installing-pyion.md)
 - **[uv](https://docs.astral.sh/uv/)** — Python package manager
 
 ### Install
