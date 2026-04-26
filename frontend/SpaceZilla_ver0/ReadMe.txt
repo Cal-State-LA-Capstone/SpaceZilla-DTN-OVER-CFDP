@@ -31,19 +31,11 @@ Note: the terminal window just. Opens. At the moment. I do not know if it connec
 Optional Ubuntu launcher support
 
 SpaceZilla can still be run normally with:
-    python spacezilla_main.py
+    python frontend/SpaceZilla_ver0/spacezilla_main.py
 
-An optional Ubuntu desktop launcher is included for app search, dock icon, and Alt+Tab integration.
+An optional Ubuntu desktop launcher is included for app search, dock icon, and Alt+Tab integration, run:
+    
+    bash frontend/SpaceZilla_ver0/linux/install_launcher.sh
 
-Launcher related files:
-    icons/SpaceZillaLogo.png
-    run_spacezilla.sh
-    linux/spacezilla.desktop
-
-To install the launcher locally on Ubuntu:
-
-    mkdir -p ~/.local/share/applications
-    cp ~/SpaceZilla-DTN-OVER-CFDP/frontend/SpaceZilla_ver0/linux/spacezilla.desktop ~/.local/share/applications/
-    update-desktop-database ~/.local/share/applications
-
-After that, search for "SpaceZilla" in Ubuntu and launch it from the app menu.
+This installs a per user SpaceZilla launcher in:
+    ~/.local/share/applications/spacezilla.desktop
