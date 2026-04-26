@@ -1,4 +1,9 @@
 #!/bin/bash
-cd /home/vboxuser/SpaceZilla-DTN-OVER-CFDP/frontend/SpaceZilla_ver0
-source /home/vboxuser/SpaceZilla-DTN-OVER-CFDP/.venv/bin/activate
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+cd "$SCRIPT_DIR"
+source "$PROJECT_ROOT/.venv/bin/activate"
 python spacezilla_main.py
