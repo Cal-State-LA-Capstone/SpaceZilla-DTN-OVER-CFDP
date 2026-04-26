@@ -1,0 +1,37 @@
+## begin ionadmin
+1 2 ''
+s
+a contact +1 +3600 2 1 100000
+a range +1 +3600 2 1 0
+m production 1000000
+m consumption 1000000
+## end ionadmin
+
+## begin ltpadmin
+1 32
+a span 1 32 32 1400 10000 1 'udplso <SENDER_IP>:1113'
+s 'udplsi 0.0.0.0:1114'
+## end ltpadmin
+
+## begin bpadmin
+1
+a scheme ipn 'ipnfw' 'ipnadminep'
+a endpoint ipn:2.0 q
+a endpoint ipn:2.1 q
+a endpoint ipn:2.64 q
+a endpoint ipn:2.65 q
+a protocol ltp 1400 100
+a induct ltp 2 ltpcli
+a outduct ltp 1 ltpclo
+s
+## end bpadmin
+
+## begin ipnadmin
+a plan 1 ltp/1
+## end ipnadmin
+
+## begin cfdpadmin
+1
+a entity 1 bp ipn:1.64 1 0 0
+s bputa
+## end cfdpadmin

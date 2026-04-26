@@ -23,9 +23,9 @@ RC_FIELDS: list[RcFieldSpec] = [
     },
     {
         "name": "entity_id",
-        "label": "CFDP Entity ID",
+        "label": "Receiver Node Number",
         "type": "int",
-        "default": 1,
+        "default": 2,
     },
     {
         "name": "bp_endpoint",
@@ -49,6 +49,6 @@ RC_FIELDS: list[RcFieldSpec] = [
         "name": "peer_address",
         "label": "Peer Address (IP:Port)",
         "type": "str",
-        "default": "127.0.0.1:1113",
+        "default": "",
     },
 ]

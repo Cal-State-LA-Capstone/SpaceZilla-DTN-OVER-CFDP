@@ -172,9 +172,11 @@ def start_container(config: NodeConfig) -> tuple[str, int]:
             "512m",
             # Allow container to reach the host machine as host.docker.internal
             "--add-host=host.docker.internal:host-gateway",
-            # Forward ion_server HTTP port
+            # Forward ion_server HTTP port and LTP UDP port (for ACKs from receiver)
             "-p",
             f"{ion_server_port}:8765",
+            "-p",
+            "1113:1113/udp",
             # Mount .rc file, ion_server script, and user home dir for file access
             "-v",
             f"{rc_file.name}:/home/ionstart.rc:ro",
