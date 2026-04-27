@@ -129,19 +129,20 @@ def _show_receiver_config_dialog(node_id: str, parent=None) -> None:
     dialog.resize(520, 420)
     layout = QVBoxLayout(dialog)
 
-    layout.addWidget(QLabel("Sender IP (your machine's LAN IP — visible to the receiver):"))
+    layout.addWidget(QLabel("Sender IP (your LAN or public IP — must be reachable by the receiver):"))
     ip_combo = QComboBox()
     ip_combo.setEditable(True)
     detected = _get_local_ips()
     for ip in detected:
         ip_combo.addItem(ip)
     ip_combo.setCurrentText(detected[0] if detected else "")
-    ip_combo.lineEdit().setPlaceholderText("e.g. 192.168.1.118")
+    ip_combo.lineEdit().setPlaceholderText("e.g. 192.168.1.118 (LAN) or 203.0.113.5 (WAN)")
     layout.addWidget(ip_combo)
 
     hint = QLabel(
-        "On WSL2: the IPs above are WSL-internal and won't work across machines.\n"
-        "Run  ipconfig  in Windows PowerShell and use your Wi-Fi / Ethernet IPv4 address."
+        "LAN (same network): use your Wi-Fi/Ethernet IP (e.g. 192.168.1.x).\n"
+        "WAN (different networks): use your public IP — find it at whatismyip.com.\n"
+        "On WSL2: run  ipconfig  in Windows PowerShell and use your Wi-Fi IPv4 address."
     )
     hint.setWordWrap(True)
     hint.setStyleSheet("color: gray; font-size: 11px;")
