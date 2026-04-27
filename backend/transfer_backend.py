@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 
 from backend.pyion_adapter import PyIonAdapter
 from runtime_logger import ionlog_parser
@@ -133,9 +134,20 @@ class TransferBackend:
         self.send_thread.start()
         return True, "Queue processing started."
 
-    # suspend doesnt work because the files send too fast
     def suspend(self, queue_id: str | None = None) -> tuple[bool, str]:
-        return False, "Suspend not yet implemented."
+        target_id = queue_id
+        if target_id is None:
+            return False, "No file specified to suspend."
+
+        with self.queue_lock:
+            item = self._get_item_by_id(target_id)
+            if item is None:
+                return False, f"File {target_id} not found in queue."
+            if item["status"] != "Queued":
+                return False, f"Cannot suspend file with status '{item['status']}'."
+
+        self._update_status(target_id, "Suspended")
+        return True, "Suspended."
 
     def cancel(self, queue_id: str | None = None) -> tuple[bool, str]:
         target_id = queue_id
@@ -158,9 +170,25 @@ class TransferBackend:
         self._update_status(target_id, "Canceled")
         return True, "Cancelled."
 
-    # doesnt work yet
     def resume(self, queue_id: str | None = None) -> tuple[bool, str]:
-        return False, "Resume not yet implemented."
+        target_id = queue_id
+        if target_id is None:
+            return False, "No file specified to resume."
+
+        with self.queue_lock:
+            item = self._get_item_by_id(target_id)
+            if item is None:
+                return False, f"File {target_id} not found in queue."
+            if item["status"] != "Suspended":
+                return False, f"Cannot resume file with status '{item['status']}'."
+
+        self._update_status(target_id, "Queued")
+
+        if not self.send_thread or not self.send_thread.is_alive():
+            self.send_thread = threading.Thread(target=self._process_queue, daemon=True)
+            self.send_thread.start()
+
+        return True, "Resumed."
 
     # returns the current transfer status as a string.
     # It looks for the active file to get the file status
@@ -292,6 +320,8 @@ class TransferBackend:
 
             with self.active_lock:
                 self.active_id = None
+
+            time.sleep(5)
 
         # clear thread reference when processing is done
         self.send_thread = None
