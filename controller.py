@@ -24,6 +24,7 @@ import frontend
 import store
 import uvicorn
 from backend.facade import BackendFacade
+from backend.apply_plan import apply_contact_plan, remove_contact_plan
 from fastapi import FastAPI
 from runtime_logger import get_logger
 from store.models import NodeState
@@ -176,6 +177,39 @@ def add_contact(
     return {"ok": True, "contact": contact.__dict__}
 
 
+@ipc_app.post("/contacts/{contact_id}/apply")
+def apply_contact(contact_id: str) -> dict:
+    if _controller is None or _controller._node_id is None or _controller._config is None:
+        return {"ok": False, "message": "controller not ready"}
+
+    contacts = store.load_contacts(_controller._node_id)
+    contact = next((c for c in contacts if c.id == contact_id), None)
+
+    if contact is None:
+        return {"ok": False, "message": "contact not found"}
+
+    try:
+
+        # Remove previously applied contact plan if there is one
+        if _controller._applied_contact is not None:
+            prev = _controller._applied_contact
+            remove_contact_plan(
+                _controller._config,
+                peer_host=prev.peer_host,
+                peer_num=prev.peer_entity_num,
+                peer_port=prev.peer_port,
+            )
+
+        apply_contact_plan(
+            _controller._config,
+            peer_host=contact.peer_host,
+            peer_num=contact.peer_entity_num,
+            peer_port=contact.peer_port,
+        )
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+    
 @ipc_app.delete("/contacts/{contact_id}")
 def delete_contact(contact_id: str) -> dict:
     if _controller is None or _controller._node_id is None:
@@ -213,6 +247,7 @@ class Controller:
         self._ipc_port: int | None = None
         self._server: uvicorn.Server | None = None
         self._server_thread: threading.Thread | None = None
+        self._applied_contact: Contact | None = None # so we know whether to apply or delete
         logger.info("Controller created (pre-boot)")
 
     # -- Public API ----------------------------------------------------------

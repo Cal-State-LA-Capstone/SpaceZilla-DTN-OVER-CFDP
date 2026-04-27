@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QHeaderView
 import subprocess
 import os
 import requests
+import threading
 
 loader = QUiLoader()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -90,6 +91,10 @@ class MainWindow:
         self.contact_area.setWidget(self.contact_container)
         self.contact_area.setWidgetResizable(True)
         self.contacts = []
+
+        # To prevent you from double clicking contact
+        self.last_applied_contact_id = None 
+        
 
         self.destination_filter.textChanged.connect(self.filter_contacts)
         self.add_contact_btn.clicked.connect(self.open_add_contact)
@@ -290,7 +295,8 @@ class MainWindow:
         
         
         })
-        # TEMPORARY HARDCODED SEND VIA IPC
+        
+        # Send request to IPC to send file to contact
         if hasattr(self, "selected_file_path"):
             try:
                 queue_result = requests.post(
@@ -315,6 +321,7 @@ class MainWindow:
 
     # Handles QUEUE
     def handle_file_send(self):
+        
         has_file = hasattr(self, "selected_file_path")
         file_name = os.path.basename(self.selected_file_path) if has_file else None
         destination = self.destination_filter.text().strip() or getattr(self, "selected_destination", "")
@@ -322,7 +329,8 @@ class MainWindow:
         self.confirm_window = load_ui("Confirmation_ver0.ui")
         confirm_label = self.confirm_window.findChild(QLabel, "confirm_label")
         button_box = self.confirm_window.findChild(QDialogButtonBox, "buttonBox")
-
+        
+        
         if not has_file:
             # Warning mode - no destination selected
             self.confirm_window.setWindowTitle("Warning")
@@ -459,8 +467,7 @@ class MainWindow:
         button_box.rejected.connect(self.contact_edit_window.close)
         self.contact_edit_window.show()
 
-    # CHANGED:
-    # Fake contact flow now accepts entity/host/port from the newer UI.
+    # Calls request to save contact to store
     def save_contact(self, name_box, entity_box, host_box, port_box):
         name = name_box.text().strip()
         entity_text = entity_box.text().strip()
@@ -480,6 +487,7 @@ class MainWindow:
         except ValueError:
             peer_port = 4556
 
+        
         try:
             result = requests.post(
                 f"http://127.0.0.1:{self.ipc_port}/contacts",
@@ -501,8 +509,8 @@ class MainWindow:
         except Exception as e:
             print(f"Failed to save contact: {e}")
 
-    # Keep the original simple row UI, but also store peer_num/peer_port in memory.
-    def add_to_contact_list(self, name, address, peer_num=0, peer_port=4556):
+    # Keep the original row UI, but also store peer_num/peer_port in memory.
+    def add_to_contact_list(self, name, address, peer_num=0, peer_port=4556, contact_id=None):
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         name_label = QLabel(name)
@@ -525,6 +533,7 @@ class MainWindow:
         row_layout.addWidget(delete_btn)
         self.contact_layout.addWidget(row_widget)
         self.contacts.append({
+            "id": contact_id,
             "name": name,
             "address": address,
             "peer_num": peer_num,
@@ -532,9 +541,22 @@ class MainWindow:
             "widget": row_widget
         })
 
+        contact = {
+            "id": contact_id,
+            "name": name,
+            "peer_entity_num": peer_num,
+            "peer_host": address,
+            "peer_port": peer_port,
+        }
+
+        # Clicking the row selects the full contact
+        name_label.mousePressEvent = lambda event: self.select_contact(contact)
+        address_label.mousePressEvent = lambda event: self.select_contact(contact)
+
+        # Old event
         # Clicking the row selects it as the destination
-        name_label.mousePressEvent = lambda event: self.select_contact(address)
-        address_label.mousePressEvent = lambda event: self.select_contact(address)
+        #name_label.mousePressEvent = lambda event: self.select_contact(address)
+        #address_label.mousePressEvent = lambda event: self.select_contact(address)
 
     # Updated edit dialog to match the newer Contact_Info_Edit.ui field names.
     def open_edit_contact(self, name_label, address_label, row_widget, peer_num=0, peer_port=4556):
@@ -628,9 +650,24 @@ class MainWindow:
                 contact["widget"].setVisible(False)
 
     # Populates the destination bar with the clicked contact's address
-    def select_contact(self, address):
-        self.destination_filter.setText(address)
-        self.selected_destination = address
+    def select_contact(self, contact):
+        self.selected_contact = contact
+        self.destination_filter.textChanged.disconnect(self.filter_contacts)
+        self.destination_filter.setText(contact["name"])
+        self.destination_filter.textChanged.connect(self.filter_contacts)
+        self.selected_destination = contact["name"]
+
+        # Show all contacts again
+        for c in self.contacts:
+            c["widget"].setVisible(True)
+
+        threading.Thread(
+            target=self._apply_contact_in_background,
+            args=(contact["id"],),
+            daemon=True,
+            ).start()
+        #self.destination_filter.setText(address)
+        #self.selected_destination = address
     
     # Should load all contacts on startup
     def load_contacts_from_ipc(self):
@@ -661,10 +698,29 @@ class MainWindow:
                 address=c["peer_host"],
                 peer_num=c["peer_entity_num"],
                 peer_port=c["peer_port"],
+                contact_id=c["id"]
             )
         self.contact_container.adjustSize()
         self.contact_container.update()
         self.contact_area.update()
+    
+    # Helper for applying
+    def _apply_contact_in_background(self, contact_id):
+        try:
+            result = requests.post(
+                f"http://127.0.0.1:{self.ipc_port}/contacts/{contact_id}/apply",
+            ).json()
+            print(f"APPLY CONTACT RESULT: {result}")
+
+            if result.get("ok"):
+                self.last_applied_contact_id = contact_id
+                self.contact_ready = True
+            else:
+                self.contact_ready = False
+
+        except Exception as e:
+            print(f"Apply contact plan request failed: {e}")
+            self.contact_ready = False
 
 if __name__ == "__main__":
     app = QApplication([])
