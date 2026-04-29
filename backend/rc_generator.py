@@ -15,7 +15,8 @@ from store.models import NodeConfig
 # Minimal template for a single ION node running BP (LTP) and CFDP.
 # Placeholders: {node_num}, {entity_id}, {peer_address}
 # peer_address is where LTP sends outgoing packets (the remote node's IP:port).
-# entity_id is the CFDP/BP node number of the destination (equals node_num for loopback).
+# entity_id is the CFDP/BP node number of the destination
+# (equals node_num for loopback).
 _RC_TEMPLATE = """\
 ## begin ionadmin
 1 {node_num} ''

@@ -47,9 +47,7 @@ _DOCKERFILE = (
     Path(__file__).resolve().parent.parent / "docker" / "pyion_v414a2.dockerfile"
 )
 
-_ION_SERVER = (
-    Path(__file__).resolve().parent.parent / "docker" / "ion_server.py"
-)
+_ION_SERVER = Path(__file__).resolve().parent.parent / "docker" / "ion_server.py"
 
 
 # -----------------------------
@@ -188,7 +186,8 @@ def start_container(config: NodeConfig) -> tuple[str, int]:
             # Start ION then launch the HTTP bridge
             "bash",
             "-c",
-            "mkdir -p /SZ_received_files && ionstart -I /home/ionstart.rc && python3 /home/ion_server.py",
+            "mkdir -p /SZ_received_files && ionstart -I /home/ionstart.rc" +
+            " && python3 /home/ion_server.py",
         ],
         capture_output=True,
         text=True,

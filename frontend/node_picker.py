@@ -6,17 +6,15 @@ Docker availability before enabling boot actions.
 
 from __future__ import annotations
 
+import socket
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-import socket
 
 import backend
 import store
 from backend.rc_generator import generate_receiver_rc
 from PySide6.QtCore import QFile, QThread, Signal
-from PySide6.QtGui import QClipboard
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
@@ -91,6 +89,7 @@ def load_node_list() -> list[NodeMeta]:
 def _get_local_ips() -> list[str]:
     """Return all non-loopback IPv4 addresses visible to this process."""
     import ipaddress
+
     seen: set[str] = set()
     results: list[str] = []
 
@@ -129,14 +128,18 @@ def _show_receiver_config_dialog(node_id: str, parent=None) -> None:
     dialog.resize(520, 420)
     layout = QVBoxLayout(dialog)
 
-    layout.addWidget(QLabel("Sender IP (your LAN or public IP — must be reachable by the receiver):"))
+    layout.addWidget(
+        QLabel("Sender IP (your LAN or public IP — must be reachable by the receiver):")
+    )
     ip_combo = QComboBox()
     ip_combo.setEditable(True)
     detected = _get_local_ips()
     for ip in detected:
         ip_combo.addItem(ip)
     ip_combo.setCurrentText(detected[0] if detected else "")
-    ip_combo.lineEdit().setPlaceholderText("e.g. 192.168.1.118 (LAN) or 203.0.113.5 (WAN)")
+    ip_combo.lineEdit().setPlaceholderText(
+        "e.g. 192.168.1.118 (LAN) or 203.0.113.5 (WAN)"
+    )
     layout.addWidget(ip_combo)
 
     hint = QLabel(
@@ -174,10 +177,15 @@ def _show_receiver_config_dialog(node_id: str, parent=None) -> None:
 
     def _save():
         if not ip_combo.currentText().strip():
-            QMessageBox.warning(dialog, "Missing IP", "Enter the sender's LAN IP before saving.")
+            QMessageBox.warning(
+                dialog, "Missing IP", "Enter the sender's LAN IP before saving."
+            )
             return
         path, _ = QFileDialog.getSaveFileName(
-            dialog, "Save Receiver Config", "receiver.rc", "RC files (*.rc);;All files (*)"
+            dialog,
+            "Save Receiver Config",
+            "receiver.rc",
+            "RC files (*.rc);;All files (*)",
         )
         if path:
             with open(path, "w") as f:
@@ -185,7 +193,9 @@ def _show_receiver_config_dialog(node_id: str, parent=None) -> None:
 
     def _copy():
         if not ip_combo.currentText().strip():
-            QMessageBox.warning(dialog, "Missing IP", "Enter the sender's LAN IP before copying.")
+            QMessageBox.warning(
+                dialog, "Missing IP", "Enter the sender's LAN IP before copying."
+            )
             return
         QApplication.clipboard().setText(preview.toPlainText())
 

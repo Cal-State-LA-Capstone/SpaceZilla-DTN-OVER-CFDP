@@ -1,16 +1,12 @@
 import os
 import subprocess
 
-from frontend.queue_button_mapping import QueueMapping
 from PySide6.QtCore import QDir, QFile, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPalette
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
-    QDialog,
     QFileSystemModel,
-    QHBoxLayout,
-    QLabel,
     QLineEdit,
     QMenu,
     QPushButton,
@@ -20,6 +16,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from frontend.queue_button_mapping import QueueMapping
 
 loader = QUiLoader()
 

@@ -23,11 +23,10 @@ import backend
 import frontend
 import store
 import uvicorn
-from fastapi import FastAPI
-from runtime_logger import get_logger
-from store.models import NodeState
 from backend.backend_facade import BackendFacade
-from runtime_logger import ionlog_parser
+from fastapi import FastAPI
+from runtime_logger import get_logger, ionlog_parser
+from store.models import NodeState
 
 if TYPE_CHECKING:
     from store.models import NodeConfig
@@ -43,44 +42,54 @@ ipc_app = FastAPI()
 
 facade = BackendFacade()
 
+
 @ipc_app.get("/health")
 def health() -> dict[str, str]:
     """Simple health-check so other parts of the system can verify
     this node's IPC server is alive."""
     return {"status": "ok"}
 
+
 @ipc_app.post("/queue/enqueue")
-def enqueue(body:dict) -> dict:
+def enqueue(body: dict) -> dict:
     ids = facade.queue_files(body["paths"])
     return {"ids": ids}
+
 
 @ipc_app.post("/queue/send")
 def send() -> dict:
     ok, msg = facade.send_files()
-    return {"ok":ok, "msg":msg}
+    return {"ok": ok, "msg": msg}
+
 
 @ipc_app.post("/queue/suspend")
 def suspend(body: dict) -> dict:
     ok, msg = facade.suspend(body.get("queue_id"))
     return {"ok": ok, "msg": msg}
 
+
 @ipc_app.post("/queue/cancel")
 def cancel(body: dict) -> dict:
     ok, msg = facade.cancel(body.get("queue_id"))
     return {"ok": ok, "msg": msg}
+
 
 @ipc_app.post("/queue/resume")
 def resume(body: dict) -> dict:
     ok, msg = facade.resume(body.get("queue_id"))
     return {"ok": ok, "msg": msg}
 
+
 @ipc_app.get("/queue")
 def get_queue() -> dict:
     return {"queue": facade.get_queue()}
 
+
 @ipc_app.get("/connected")
 def connected() -> dict:
     return {"connected": facade.is_connected()}
+
+
 # -- Controller --------------------------------------------------------------
 
 
@@ -136,7 +145,11 @@ class Controller:
             backend.build_image()
 
             self._container_id, container_port = backend.start_container(self._config)
-            logger.info("Container started: %s (ion_server port %s)", self._container_id, container_port)
+            logger.info(
+                "Container started: %s (ion_server port %s)",
+                self._container_id,
+                container_port,
+            )
 
             ok, msg = facade.connect(
                 node_number=self._config.ion_node_number,
@@ -200,9 +213,9 @@ class Controller:
         self._stop_ipc_server()
         self._ion_parser.stop()
 
-        #self._ion_parser = ionlog_parser()
-        #self._ion_parser.start()
-        #facade.set_parser(self._ion_parser)
+        # self._ion_parser = ionlog_parser()
+        # self._ion_parser.start()
+        # facade.set_parser(self._ion_parser)
 
         if self._container_id is not None:
             backend.stop_container(self._container_id)

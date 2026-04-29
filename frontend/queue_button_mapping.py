@@ -54,6 +54,7 @@ class QueueMapping:
         on the IPC server to start processing the queue.
         """
         from pathlib import Path
+
         from frontend.SpaceZilla_ver0.spacezilla_main import load_ui
 
         if not self.ui.queue_items:
@@ -63,7 +64,9 @@ class QueueMapping:
             print("Send blocked: backend not connected to ION")
             return
 
-        ui_path = str(Path(__file__).parent / "SpaceZilla_ver0" / "Confirmation_ver0.ui")
+        ui_path = str(
+            Path(__file__).parent / "SpaceZilla_ver0" / "Confirmation_ver0.ui"
+        )
         confirm = load_ui(ui_path)
         confirm.setWindowTitle("Confirm")
 
@@ -78,20 +81,28 @@ class QueueMapping:
         else:
             print("Send cancelled by user")
 
-    def suspend_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
+    def suspend_action(
+        self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn
+    ):
         """Called when a file's suspend button is clicked."""
         try:
-            response = httpx.post(self._url("/queue/suspend"), json={"queue_id": queue_id}, timeout=5)
+            response = httpx.post(
+                self._url("/queue/suspend"), json={"queue_id": queue_id}, timeout=5
+            )
             result = response.json() if response.content else {}
             if result.get("ok"):
                 status_button.setText("Suspended")
         except Exception as e:
             print(f"Suspend request failed: {e}")
 
-    def cancel_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
+    def cancel_action(
+        self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn
+    ):
         """Called when a file's cancel button is clicked."""
         try:
-            response = httpx.post(self._url("/queue/cancel"), json={"queue_id": queue_id}, timeout=5)
+            response = httpx.post(
+                self._url("/queue/cancel"), json={"queue_id": queue_id}, timeout=5
+            )
             result = response.json() if response.content else {}
             if result.get("ok"):
                 status_button.setText("Cancelled")
@@ -101,10 +112,14 @@ class QueueMapping:
         except Exception as e:
             print(f"Cancel request failed: {e}")
 
-    def resume_action(self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn):
+    def resume_action(
+        self, queue_id, status_button, suspend_btn, cancel_btn, resume_btn
+    ):
         """Called when a file's resume button is clicked."""
         try:
-            response = httpx.post(self._url("/queue/resume"), json={"queue_id": queue_id}, timeout=5)
+            response = httpx.post(
+                self._url("/queue/resume"), json={"queue_id": queue_id}, timeout=5
+            )
             result = response.json() if response.content else {}
             if result.get("ok"):
                 status_button.setText("Resumed")
@@ -118,10 +133,10 @@ class QueueMapping:
         cannot push callbacks to the frontend.
         """
         status_text = {
-            "Queued":    "Pending",
-            "Running":   "Sending",
+            "Queued": "Pending",
+            "Running": "Sending",
             "Completed": "Done",
-            "Failed":    "Failed",
+            "Failed": "Failed",
             "Cancelled": "Cancelled",
             "Suspended": "Suspended",
         }
@@ -157,13 +172,19 @@ class QueueMapping:
         resume_btn.setIcon(QIcon.fromTheme("media-playback-start"))
 
         suspend_btn.clicked.connect(
-            lambda: self.suspend_action(queue_id, status_button, suspend_btn, cancel_btn, resume_btn)
+            lambda: self.suspend_action(
+                queue_id, status_button, suspend_btn, cancel_btn, resume_btn
+            )
         )
         cancel_btn.clicked.connect(
-            lambda: self.cancel_action(queue_id, status_button, suspend_btn, cancel_btn, resume_btn)
+            lambda: self.cancel_action(
+                queue_id, status_button, suspend_btn, cancel_btn, resume_btn
+            )
         )
         resume_btn.clicked.connect(
-            lambda: self.resume_action(queue_id, status_button, suspend_btn, cancel_btn, resume_btn)
+            lambda: self.resume_action(
+                queue_id, status_button, suspend_btn, cancel_btn, resume_btn
+            )
         )
 
         row_layout.addWidget(file_label)
@@ -173,12 +194,14 @@ class QueueMapping:
         row_layout.addWidget(resume_btn)
 
         self.ui.queue_layout.addWidget(row_widget)
-        self.ui.queue_items.append({
-            "id": queue_id,
-            "file": file_name,
-            "status_button": status_button,
-            "widget": row_widget,
-        })
+        self.ui.queue_items.append(
+            {
+                "id": queue_id,
+                "file": file_name,
+                "status_button": status_button,
+                "widget": row_widget,
+            }
+        )
 
     def _poll_queue(self) -> None:
         """Fetch current queue state from the backend and update status buttons."""

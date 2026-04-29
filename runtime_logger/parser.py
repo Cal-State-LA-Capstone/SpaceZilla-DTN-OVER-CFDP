@@ -1,14 +1,13 @@
 # runtime_logger/parser.py
+import os
 import re
 import threading
 import time
-import os
+
 from runtime_logger.logger import get_logger
 
 ION_LOG_PATH = "/home/ion.log"
-RAW_LINE_RE = re.compile(
-    r"\[(\d{4}/\d{2}/\d{2}-\d{2}:\d{2}:\d{2})\]\s+\[(.)\]\s*(.*)"
-)
+RAW_LINE_RE = re.compile(r"\[(\d{4}/\d{2}/\d{2}-\d{2}:\d{2}:\d{2})\]\s+\[(.)\]\s*(.*)")
 
 # ── Pattern table ──────────────────────────────────────────────────────────
 # Each entry: (compiled_regex, dedup_key, message_fn)
@@ -56,9 +55,7 @@ PATTERNS = [
     (
         re.compile(r"Can't find ION security database", re.IGNORECASE),
         "no_sec_db",
-        lambda m, ctx: (
-            "⚠️  No ION security database — running without bundle security"
-        ),
+        lambda m, ctx: "⚠️  No ION security database — running without bundle security",
     ),
     (
         re.compile(r"running without bundle security", re.IGNORECASE),
@@ -69,35 +66,30 @@ PATTERNS = [
         re.compile(r"Endpoint is already open", re.IGNORECASE),
         "ep_open",
         lambda m, ctx: (
-            "Endpoint already open — ION may need a restart"
-            " (ionstop → ionstart)"
+            "Endpoint already open — ION may need a restart (ionstop → ionstart)"
         ),
     ),
     (
         re.compile(r"Semaphore open failed", re.IGNORECASE),
         "sem_fail",
-        lambda m, ctx: (
-            "ION shared memory conflict — run ionstop and restart"
-        ),
+        lambda m, ctx: "ION shared memory conflict — run ionstop and restart",
     ),
     (
         re.compile(r"CFDP can't find source file\.: (.+)", re.IGNORECASE),
         None,
-        lambda m, ctx: (
-            f"File not found: \"{m.group(1).strip()}\" — check the file path"
-        ),
+        lambda m, ctx: f'File not found: "{m.group(1).strip()}" — check the file path',
     ),
     (
         re.compile(r"CFDP unable to cancel outbound FDU", re.IGNORECASE),
         None,
         lambda m, ctx: (
-            f"Error sending \"{ctx.get('file', 'unknown')}\" "
+            f'Error sending "{ctx.get("file", "unknown")}" '
             f"to Node {ctx.get('node', '2')} — transfer cancelled"
         ),
     ),
 ]
 
-DEDUP_WINDOW = 60   # seconds
+DEDUP_WINDOW = 60  # seconds
 
 
 class ionlog_parser:
@@ -118,10 +110,10 @@ class ionlog_parser:
     """
 
     def __init__(self):
-        self._log       = get_logger("ion")
-        self._context   = {"file": None, "node": "2"}
-        self._running   = False
-        self._thread    = None
+        self._log = get_logger("ion")
+        self._context = {"file": None, "node": "2"}
+        self._running = False
+        self._thread = None
         self._last_seen = {}
 
     def set_current_file(self, filename: str) -> None:
@@ -136,15 +128,11 @@ class ionlog_parser:
         progress: int = None,
     ) -> None:
         messages = {
-            "started": f"Sending \"{filename}\" to Node {node}...",
-            "eof_sent": (
-                f"All bytes sent for \"{filename}\" — awaiting confirmation"
-            ),
-            "finished": (
-                f"\"{filename}\" successfully delivered to Node {node}"
-            ),
-            "error": f"Error sending \"{filename}\" to Node {node}",
-            "cancelled": f"\"{filename}\" was cancelled",
+            "started": f'Sending "{filename}" to Node {node}...',
+            "eof_sent": (f'All bytes sent for "{filename}" — awaiting confirmation'),
+            "finished": (f'"{filename}" successfully delivered to Node {node}'),
+            "error": f'Error sending "{filename}" to Node {node}',
+            "cancelled": f'"{filename}" was cancelled',
         }
         msg = messages.get(event_type, f"ℹ️  [{event_type}] {filename}")
         if progress is not None:
@@ -154,7 +142,7 @@ class ionlog_parser:
     def start(self) -> None:
         """Start the background tailing thread."""
         self._running = True
-        self._thread  = threading.Thread(target=self._tail, daemon=True)
+        self._thread = threading.Thread(target=self._tail, daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
@@ -163,7 +151,7 @@ class ionlog_parser:
     def _should_emit(self, dedup_key: str | None) -> bool:
         if dedup_key is None:
             return True
-        now  = time.time()
+        now = time.time()
         last = self._last_seen.get(dedup_key, 0)
         if now - last > DEDUP_WINDOW:
             self._last_seen[dedup_key] = now

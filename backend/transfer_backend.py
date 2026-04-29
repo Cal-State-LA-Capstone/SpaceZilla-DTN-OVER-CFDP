@@ -2,8 +2,9 @@ import os
 import threading
 import time
 
-from backend.pyion_adapter import PyIonAdapter
 from runtime_logger import ionlog_parser
+
+from backend.pyion_adapter import PyIonAdapter
 
 
 class TransferBackend:
@@ -231,24 +232,24 @@ class TransferBackend:
     def _make_event_handler(self, queue_id: str):
         def handler(event):
             event_name = str(event)
-            file_name = next((i["file_name"] for i in self.queue if i["id"] == 
-                              queue_id), "unknown")
+            file_name = next(
+                (i["file_name"] for i in self.queue if i["id"] == queue_id), "unknown"
+            )
 
             if "FINISHED" in event_name:
                 if hasattr(event, "condition_code") and event.condition_code != 0:
                     self._update_status(queue_id, "Failed")
-                    if self.parser: self.parser.log_transfer_event("error",
-                                                                    file_name, "2")
+                    if self.parser:
+                        self.parser.log_transfer_event("error", file_name, "2")
                 else:
                     self._update_status(queue_id, "Completed")
-                    if self.parser: self.parser.log_transfer_event("finished",
-                                                                   file_name, "2")
+                    if self.parser:
+                        self.parser.log_transfer_event("finished", file_name, "2")
 
             elif "FAULT" in event_name or "ABANDONED" in event_name:
-
                 self._update_status(queue_id, "Failed")
-                if self.parser: self.parser.log_transfer_event("error",
-                                                               file_name, "2")
+                if self.parser:
+                    self.parser.log_transfer_event("error", file_name, "2")
             elif "SUSPENDED" in event_name:
                 self._update_status(queue_id, "Queued")
             elif "RESUMED" in event_name:
