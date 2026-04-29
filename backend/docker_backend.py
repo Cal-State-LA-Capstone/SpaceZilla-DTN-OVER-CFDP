@@ -186,8 +186,8 @@ def start_container(config: NodeConfig) -> tuple[str, int]:
             # Start ION then launch the HTTP bridge
             "bash",
             "-c",
-            "mkdir -p /SZ_received_files && ionstart -I /home/ionstart.rc" +
-            " && python3 /home/ion_server.py",
+            "mkdir -p /SZ_received_files && ionstart -I /home/ionstart.rc"
+            + " && python3 /home/ion_server.py",
         ],
         capture_output=True,
         text=True,
