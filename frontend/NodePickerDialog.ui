@@ -38,6 +38,16 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="btnReceiverConfig">
+       <property name="text">
+        <string>Get Receiver Config</string>
+       </property>
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btnBootNode">
        <property name="text">
         <string>Boot Selected</string>

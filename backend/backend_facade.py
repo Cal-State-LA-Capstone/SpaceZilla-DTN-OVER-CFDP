@@ -17,11 +17,13 @@ class BackendFacade:
         node_number: int,
         entity_id: int,
         bp_endpoint: str,
+        container_port: int | None = None,
     ) -> tuple[bool, str]:
         return self.transfer_backend.connect(
             node_number=node_number,
             entity_id=entity_id,
             bp_endpoint=bp_endpoint,
+            container_port=container_port,
         )
 
     # disconnects the backend
@@ -54,6 +56,17 @@ class BackendFacade:
     def send_files(self, on_change=None) -> tuple[bool, str]:
         return self.transfer_backend.send_files(on_change=on_change)
 
-    # returns a simple text indicator for the currently active transfer
+    def suspend(self, queue_id: str | None = None) -> tuple[bool, str]:
+        return self.transfer_backend.suspend(queue_id)
+
+    def cancel(self, queue_id: str | None = None) -> tuple[bool, str]:
+        return self.transfer_backend.cancel(queue_id)
+
+    def resume(self, queue_id: str | None = None) -> tuple[bool, str]:
+        return self.transfer_backend.resume(queue_id)
+
     def status_indicator(self) -> str:
         return self.transfer_backend.status_indicator()
+
+    def set_parser(self, parser) -> None:
+        self.transfer_backend.set_parser(parser)

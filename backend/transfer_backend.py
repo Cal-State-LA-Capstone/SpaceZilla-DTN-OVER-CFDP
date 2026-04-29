@@ -1,5 +1,8 @@
 import os
 import threading
+import time
+
+from runtime_logger import ionlog_parser
 
 from backend.pyion_adapter import PyIonAdapter
 
@@ -29,11 +32,17 @@ class TransferBackend:
         # Id of the file being sent
         self.active_id = None
 
+        self.parser: ionlog_parser | None = None
+
+    def set_parser(self, parser: ionlog_parser) -> None:
+        self.parser = parser
+
     def connect(
         self,
         node_number: int,
         entity_id: int,
         bp_endpoint: str,
+        container_port: int | None = None,
     ) -> tuple[bool, str]:
         """
         This sets up the connection between nodes.
@@ -44,6 +53,7 @@ class TransferBackend:
             local_node=node_number,
             local_eid=bp_endpoint,
             peer_entity_nbr=entity_id,
+            container_port=container_port,
         )
 
     def disconnect(self) -> tuple[bool, str]:
@@ -125,25 +135,61 @@ class TransferBackend:
         self.send_thread.start()
         return True, "Queue processing started."
 
-    # suspend doesnt work because the files send too fast
-    def suspend(self) -> tuple[bool, str]:
-        return self.adapter.suspend()
+    def suspend(self, queue_id: str | None = None) -> tuple[bool, str]:
+        target_id = queue_id
+        if target_id is None:
+            return False, "No file specified to suspend."
 
-    def cancel(self) -> tuple[bool, str]:
-        ok, msg = self.adapter.cancel()
+        with self.queue_lock:
+            item = self._get_item_by_id(target_id)
+            if item is None:
+                return False, f"File {target_id} not found in queue."
+            if item["status"] != "Queued":
+                return False, f"Cannot suspend file with status '{item['status']}'."
 
-        if ok:
+        self._update_status(target_id, "Suspended")
+        return True, "Suspended."
+
+    def cancel(self, queue_id: str | None = None) -> tuple[bool, str]:
+        target_id = queue_id
+
+        # if no specific file, target the active transfer
+        if target_id is None:
             with self.active_lock:
-                active_id = self.active_id
+                target_id = self.active_id
 
-            if active_id is not None:
-                self._update_status(active_id, "Canceled")
+        if target_id is None:
+            return False, "No active transfer to cancel."
 
-        return ok, msg
+        with self.queue_lock:
+            item = self._get_item_by_id(target_id)
+            if item is None:
+                return False, f"File {target_id} not found in queue."
+            if item["status"] not in {"Queued", "Running"}:
+                return False, f"Cannot cancel file with status '{item['status']}'."
 
-    # doesnt work yet
-    def resume(self) -> tuple[bool, str]:
-        return self.adapter.resume()
+        self._update_status(target_id, "Canceled")
+        return True, "Cancelled."
+
+    def resume(self, queue_id: str | None = None) -> tuple[bool, str]:
+        target_id = queue_id
+        if target_id is None:
+            return False, "No file specified to resume."
+
+        with self.queue_lock:
+            item = self._get_item_by_id(target_id)
+            if item is None:
+                return False, f"File {target_id} not found in queue."
+            if item["status"] != "Suspended":
+                return False, f"Cannot resume file with status '{item['status']}'."
+
+        self._update_status(target_id, "Queued")
+
+        if not self.send_thread or not self.send_thread.is_alive():
+            self.send_thread = threading.Thread(target=self._process_queue, daemon=True)
+            self.send_thread.start()
+
+        return True, "Resumed."
 
     # returns the current transfer status as a string.
     # It looks for the active file to get the file status
@@ -186,14 +232,24 @@ class TransferBackend:
     def _make_event_handler(self, queue_id: str):
         def handler(event):
             event_name = str(event)
+            file_name = next(
+                (i["file_name"] for i in self.queue if i["id"] == queue_id), "unknown"
+            )
 
             if "FINISHED" in event_name:
                 if hasattr(event, "condition_code") and event.condition_code != 0:
                     self._update_status(queue_id, "Failed")
+                    if self.parser:
+                        self.parser.log_transfer_event("error", file_name, "2")
                 else:
                     self._update_status(queue_id, "Completed")
+                    if self.parser:
+                        self.parser.log_transfer_event("finished", file_name, "2")
+
             elif "FAULT" in event_name or "ABANDONED" in event_name:
                 self._update_status(queue_id, "Failed")
+                if self.parser:
+                    self.parser.log_transfer_event("error", file_name, "2")
             elif "SUSPENDED" in event_name:
                 self._update_status(queue_id, "Queued")
             elif "RESUMED" in event_name:
@@ -228,6 +284,9 @@ class TransferBackend:
                 self.active_id = queue_id
 
             self._update_status(queue_id, "Running")
+            if self.parser:
+                self.parser.set_current_file(file_name)
+                self.parser.log_transfer_event("started", file_name, "2")
 
             try:
                 ok, msg = self.adapter.register_event_handler(
@@ -242,7 +301,7 @@ class TransferBackend:
 
                 ok, msg = self.adapter.send_file(
                     source_file=path,
-                    dest_file=f"/SZ_received_files/{file_name}",
+                    dest_file=file_name,
                     mode=0,
                 )
 
@@ -262,6 +321,8 @@ class TransferBackend:
 
             with self.active_lock:
                 self.active_id = None
+
+            time.sleep(5)
 
         # clear thread reference when processing is done
         self.send_thread = None

@@ -54,7 +54,7 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
         from frontend.SpaceZilla_ver0.spacezilla_main import MainWindow
 
         QApplication.instance() or QApplication(sys.argv)
-        window = MainWindow()
+        window = MainWindow(ipc_port)
     finally:
         os.chdir(original_cwd)
 

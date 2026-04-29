@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import platform
+import socket
 import subprocess
 import tempfile
 import time
@@ -45,6 +46,8 @@ _IMAGE_NAME = "spacezilla-ion"
 _DOCKERFILE = (
     Path(__file__).resolve().parent.parent / "docker" / "pyion_v414a2.dockerfile"
 )
+
+_ION_SERVER = Path(__file__).resolve().parent.parent / "docker" / "ion_server.py"
 
 
 # -----------------------------
@@ -101,12 +104,34 @@ def build_image(*, force: bool = False) -> None:
 # -----------------------------
 
 
-def start_container(config: NodeConfig) -> str:
-    """
-    Run a detached container for this node. Returns the container ID.
+def _find_free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
 
-    Generates an ionstart.rc file from the node config, mounts it
-    into the container, and runs ionstart so ION is ready for PyION.
+
+def wait_for_ion_server(port: int, timeout: float = 40.0) -> bool:
+    """Poll until ion_server inside the container is accepting HTTP connections."""
+    import httpx
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            resp = httpx.get(f"http://127.0.0.1:{port}/connected", timeout=2.0)
+            if resp.status_code == 200:
+                return True
+        except Exception:
+            pass
+        time.sleep(1.5)
+    return False
+
+
+def start_container(config: NodeConfig) -> tuple[str, int]:
+    """
+    Run a detached container for this node. Returns (container_id, ion_server_port).
+
+    Generates an ionstart.rc file from the node config, mounts it into the
+    container, runs ionstart, then starts ion_server.py for HTTP-based CFDP.
     """
     # Import here to avoid circular imports or unnecessary dependency loading
     from backend.rc_generator import generate_rc
@@ -128,6 +153,9 @@ def start_container(config: NodeConfig) -> str:
 
     logger.debug("Generated ionstart.rc at %s", rc_file.name)
 
+    ion_server_port = _find_free_port()
+    home_dir = str(Path.home())
+
     # Launch container in detached mode
     result = subprocess.run(
         [
@@ -140,21 +168,26 @@ def start_container(config: NodeConfig) -> str:
             "1.0",
             "--memory",
             "512m",
-            # Pass configuration via environment variables
-            "-e",
-            f"ION_NODE_NUMBER={config.ion_node_number}",
-            "-e",
-            f"ION_ENTITY_ID={config.ion_entity_id}",
-            "-e",
-            f"BP_ENDPOINT={config.bp_endpoint}",
-            # Mount the generated .rc file into the container
+            # Allow container to reach the host machine as host.docker.internal
+            "--add-host=host.docker.internal:host-gateway",
+            # Forward ion_server HTTP port and LTP UDP port (for ACKs from receiver)
+            "-p",
+            f"{ion_server_port}:8765",
+            "-p",
+            "1113:1113/udp",
+            # Mount .rc file, ion_server script, and user home dir for file access
             "-v",
             f"{rc_file.name}:/home/ionstart.rc:ro",
+            "-v",
+            f"{_ION_SERVER}:/home/ion_server.py:ro",
+            "-v",
+            f"{home_dir}:{home_dir}:ro",
             _IMAGE_NAME,
-            # Start ION with the .rc file, then stay alive for PyION
+            # Start ION then launch the HTTP bridge
             "bash",
             "-c",
-            "ionstart -I /home/ionstart.rc && tail -f /dev/null",
+            "mkdir -p /SZ_received_files && ionstart -I /home/ionstart.rc"
+            + " && python3 /home/ion_server.py",
         ],
         capture_output=True,
         text=True,
@@ -165,8 +198,15 @@ def start_container(config: NodeConfig) -> str:
             f"docker run failed: {result.stderr.strip() or result.stdout.strip()}"
         )
 
-    # Docker returns the container ID on stdout
-    return result.stdout.strip()
+    container_id = result.stdout.strip()
+    logger.debug("Waiting for ion_server on port %s...", ion_server_port)
+
+    if not wait_for_ion_server(ion_server_port):
+        subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
+        raise RuntimeError("ion_server did not start within the timeout period")
+
+    logger.info("ion_server ready on port %s", ion_server_port)
+    return container_id, ion_server_port
 
 
 def stop_container(container_id: str) -> None:

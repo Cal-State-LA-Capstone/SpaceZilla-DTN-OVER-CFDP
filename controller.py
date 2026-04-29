@@ -23,8 +23,9 @@ import backend
 import frontend
 import store
 import uvicorn
+from backend.backend_facade import BackendFacade
 from fastapi import FastAPI
-from runtime_logger import get_logger
+from runtime_logger import get_logger, ionlog_parser
 from store.models import NodeState
 
 if TYPE_CHECKING:
@@ -39,12 +40,54 @@ logger = get_logger("controller")
 
 ipc_app = FastAPI()
 
+facade = BackendFacade()
+
 
 @ipc_app.get("/health")
 def health() -> dict[str, str]:
     """Simple health-check so other parts of the system can verify
     this node's IPC server is alive."""
     return {"status": "ok"}
+
+
+@ipc_app.post("/queue/enqueue")
+def enqueue(body: dict) -> dict:
+    ids = facade.queue_files(body["paths"])
+    return {"ids": ids}
+
+
+@ipc_app.post("/queue/send")
+def send() -> dict:
+    ok, msg = facade.send_files()
+    return {"ok": ok, "msg": msg}
+
+
+@ipc_app.post("/queue/suspend")
+def suspend(body: dict) -> dict:
+    ok, msg = facade.suspend(body.get("queue_id"))
+    return {"ok": ok, "msg": msg}
+
+
+@ipc_app.post("/queue/cancel")
+def cancel(body: dict) -> dict:
+    ok, msg = facade.cancel(body.get("queue_id"))
+    return {"ok": ok, "msg": msg}
+
+
+@ipc_app.post("/queue/resume")
+def resume(body: dict) -> dict:
+    ok, msg = facade.resume(body.get("queue_id"))
+    return {"ok": ok, "msg": msg}
+
+
+@ipc_app.get("/queue")
+def get_queue() -> dict:
+    return {"queue": facade.get_queue()}
+
+
+@ipc_app.get("/connected")
+def connected() -> dict:
+    return {"connected": facade.is_connected()}
 
 
 # -- Controller --------------------------------------------------------------
@@ -91,6 +134,9 @@ class Controller:
         """
         logger.info("Booting node %s", node_id)
 
+        self._ion_parser = ionlog_parser()
+        self._ion_parser.start()
+
         try:
             self._node_id = node_id
             self._config = store.load_config(node_id)
@@ -98,11 +144,23 @@ class Controller:
             # Build the Docker image if it doesn't exist yet
             backend.build_image()
 
-            self._container_id = backend.start_container(self._config)
-            logger.info("Container started: %s", self._container_id)
+            self._container_id, container_port = backend.start_container(self._config)
+            logger.info(
+                "Container started: %s (ion_server port %s)",
+                self._container_id,
+                container_port,
+            )
 
-            logger.info("Capturing ion.log")
-            backend.start_ion_logger(self._container_id)
+            ok, msg = facade.connect(
+                node_number=self._config.ion_node_number,
+                entity_id=self._config.ion_entity_id,
+                bp_endpoint=self._config.bp_endpoint,
+                container_port=container_port,
+            )
+            logger.info("Backend connect: ok=%s msg=%s", ok, msg)
+
+            # logger.info("Capturing ion.log")
+            # backend.start_ion_logger(self._container_id)  # not yet implemented
             self._start_ipc_server()
 
             # Uvicorn binds the socket in its thread — wait for the port
@@ -153,10 +211,17 @@ class Controller:
         logger.info("Shutting down node %s", self._node_id)
 
         self._stop_ipc_server()
+        self._ion_parser.stop()
+
+        # self._ion_parser = ionlog_parser()
+        # self._ion_parser.start()
+        # facade.set_parser(self._ion_parser)
 
         if self._container_id is not None:
             backend.stop_container(self._container_id)
             logger.info("Container stopped: %s", self._container_id)
+
+        facade.disconnect()
 
         # Mark the node as stopped on disk so the Node Picker shows the
         # correct status next time it's opened.
