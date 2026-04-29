@@ -81,6 +81,34 @@ class PyIonAdapter:
         except Exception as e:
             return False, f"Send failed: {e}"
 
+    def apply_contact_plan(self, rc_text: str) -> tuple[bool, str]:
+        if self._base_url is None:
+            return False, "Not connected."
+        try:
+            resp = httpx.post(
+                f"{self._base_url}/apply_contact_plan",
+                json={"rc_text": rc_text},
+                timeout=90.0,
+            )
+            data = resp.json()
+            return data["ok"], data["msg"]
+        except Exception as e:
+            return False, f"Apply contact plan failed: {e}"
+
+    def connect_cfdp(self, peer_entity_nbr: int) -> tuple[bool, str]:
+        if self._base_url is None:
+            return False, "Not connected."
+        try:
+            resp = httpx.post(
+                f"{self._base_url}/connect_cfdp",
+                json={"peer_entity_nbr": peer_entity_nbr},
+                timeout=10.0,
+            )
+            data = resp.json()
+            return data["ok"], data["msg"]
+        except Exception as e:
+            return False, f"Connect CFDP failed: {e}"
+
     def wait_for_transaction_end(
         self,
         timeout: float | None = None,

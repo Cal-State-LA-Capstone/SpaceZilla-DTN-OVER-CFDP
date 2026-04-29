@@ -10,7 +10,7 @@ https://github.com/nasa-jpl/ION-DTN
 
 from __future__ import annotations
 
-from store.models import NodeConfig
+from store.models import Contact, NodeConfig
 
 # Minimal template for a single ION node running BP (LTP) and CFDP.
 # Placeholders: {node_num}, {entity_id}, {peer_address}
@@ -121,6 +121,38 @@ def generate_receiver_rc(config: NodeConfig, sender_ip: str) -> str:
         receiver_node_num=receiver_node_num,
         sender_ip=sender_ip,
         receiver_ltp_port=receiver_ltp_port,
+    )
+
+
+def generate_contact_plan(config: NodeConfig, contact: Contact) -> str:
+    """Generate admin commands to add routing entries for a new contact.
+
+    Adds ionadmin contact/range, ltpadmin span, bpadmin outduct,
+    ipnadmin plan, and cfdpadmin entity for the given contact.
+    Since ipnadmin already ran at boot (via ionstart.rc), ipnfw is
+    warm and these commands complete in under a second.
+    """
+    my_node = config.ion_node_number
+    peer = contact.peer_entity_num
+    peer_addr = f"{contact.peer_host}:{contact.peer_port}"
+
+    return (
+        f"## begin ionadmin\n"
+        f"a contact +1 +3600 {my_node} {peer} 100000\n"
+        f"a range +1 +3600 {my_node} {peer} 0\n"
+        f"## end ionadmin\n\n"
+        f"## begin ltpadmin\n"
+        f"a span {peer} 32 32 1400 10000 1 'udplso {peer_addr}'\n"
+        f"## end ltpadmin\n\n"
+        f"## begin bpadmin\n"
+        f"a outduct ltp {peer} ltpclo\n"
+        f"## end bpadmin\n\n"
+        f"## begin ipnadmin\n"
+        f"a plan {peer} ltp/{peer}\n"
+        f"## end ipnadmin\n\n"
+        f"## begin cfdpadmin\n"
+        f"a entity {peer} bp ipn:{peer}.64 1 0 0\n"
+        f"## end cfdpadmin\n"
     )
 
 

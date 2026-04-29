@@ -192,6 +192,12 @@ class TransferBackend:
 
     # returns the current transfer status as a string.
     # It looks for the active file to get the file status
+    def apply_contact_plan(self, rc_text: str) -> tuple[bool, str]:
+        return self.adapter.apply_contact_plan(rc_text)
+
+    def connect_cfdp(self, peer_entity_nbr: int) -> tuple[bool, str]:
+        return self.adapter.connect_cfdp(peer_entity_nbr)
+
     def status_indicator(self) -> str:
         with self.active_lock:
             if self.active_id is None:

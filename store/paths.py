@@ -74,3 +74,8 @@ def node_state_path(node_id: str) -> Path:
 def settings_path() -> Path:
     """Return ``<app_data>/global/settings.json``."""
     return global_dir() / "settings.json"
+
+
+def contacts_path(node_id: str) -> Path:
+    """Return ``<app_data>/nodes/{node_id}/contacts.json``."""
+    return node_dir(node_id) / "contacts.json"

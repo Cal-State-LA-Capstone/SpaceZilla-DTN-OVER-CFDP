@@ -68,5 +68,11 @@ class BackendFacade:
     def status_indicator(self) -> str:
         return self.transfer_backend.status_indicator()
 
+    def apply_contact_plan(self, rc_text: str) -> tuple[bool, str]:
+        return self.transfer_backend.apply_contact_plan(rc_text)
+
+    def connect_cfdp(self, peer_entity_nbr: int) -> tuple[bool, str]:
+        return self.transfer_backend.connect_cfdp(peer_entity_nbr)
+
     def set_parser(self, parser) -> None:
         self.transfer_backend.set_parser(parser)

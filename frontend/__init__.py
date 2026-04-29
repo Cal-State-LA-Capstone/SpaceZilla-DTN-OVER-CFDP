@@ -60,6 +60,18 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
 
     window.node_id = node_id
     window.ipc_port = ipc_port
+
+    # Pre-fill destination with the initial peer address from the node config.
+    try:
+        import store
+        config = store.load_config(node_id)
+        fields = {f.name: f.value for f in config.rc_fields}
+        peer_address = str(fields.get("peer_address", "")).strip()
+        if peer_address:
+            window.destination_display.setText(peer_address)
+    except Exception:
+        pass
+
     window.show()
     _windows.append(window)
 
@@ -67,5 +79,6 @@ def show_main_window(node_id: str, ipc_port: int) -> None:
 def teardown() -> None:
     """Close all windows and release Qt resources."""
     for window in _windows:
-        window.close()
+        w = getattr(window, "window", window)
+        w.close()
     _windows.clear()

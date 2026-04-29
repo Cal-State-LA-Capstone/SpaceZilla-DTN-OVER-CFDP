@@ -19,14 +19,17 @@ import threading
 import time
 from typing import TYPE_CHECKING
 
+import uuid
+
 import backend
 import frontend
 import store
 import uvicorn
 from fastapi import FastAPI
 from runtime_logger import get_logger
-from store.models import NodeState
+from store.models import Contact, NodeState
 from backend.backend_facade import BackendFacade
+from backend.rc_generator import generate_contact_plan
 from runtime_logger import ionlog_parser
 
 if TYPE_CHECKING:
@@ -42,6 +45,9 @@ logger = get_logger("controller")
 ipc_app = FastAPI()
 
 facade = BackendFacade()
+
+# Set by Controller.boot() so IPC endpoints can resolve the current node.
+_current_node_id: str | None = None
 
 @ipc_app.get("/health")
 def health() -> dict[str, str]:
@@ -81,6 +87,60 @@ def get_queue() -> dict:
 @ipc_app.get("/connected")
 def connected() -> dict:
     return {"connected": facade.is_connected()}
+
+
+@ipc_app.get("/contacts")
+def get_contacts() -> dict:
+    if _current_node_id is None:
+        return {"contacts": []}
+    contacts = store.load_contacts(_current_node_id)
+    from dataclasses import asdict
+    return {"contacts": [asdict(c) for c in contacts]}
+
+
+@ipc_app.post("/contacts")
+def add_contact(body: dict) -> dict:
+    if _current_node_id is None:
+        return {"ok": False, "msg": "No active node."}
+    contact = Contact(
+        id=uuid.uuid4().hex,
+        name=body["name"],
+        peer_entity_num=int(body["peer_entity_num"]),
+        peer_host=body["peer_host"],
+        peer_port=int(body.get("peer_port", 1114)),
+        remote_dest_dir=body.get("remote_dest_dir", "/tmp"),
+    )
+    store.create_contact(_current_node_id, contact)
+    from dataclasses import asdict
+    return {"ok": True, "contact": asdict(contact)}
+
+
+@ipc_app.delete("/contacts/{contact_id}")
+def remove_contact(contact_id: str) -> dict:
+    if _current_node_id is None:
+        return {"ok": False, "msg": "No active node."}
+    removed = store.delete_contact(_current_node_id, contact_id)
+    return {"ok": removed}
+
+
+@ipc_app.post("/contacts/{contact_id}/apply")
+def apply_contact(contact_id: str) -> dict:
+    if _current_node_id is None:
+        return {"ok": False, "msg": "No active node."}
+    contacts = store.load_contacts(_current_node_id)
+    contact = next((c for c in contacts if c.id == contact_id), None)
+    if contact is None:
+        return {"ok": False, "msg": f"Contact {contact_id} not found."}
+    config = store.load_config(_current_node_id)
+    rc_text = generate_contact_plan(config, contact)
+    logger.info("Applying contact plan for %s (entity %s)", contact.name, contact.peer_entity_num)
+    ok, msg = facade.apply_contact_plan(rc_text)
+    logger.info("apply_contact_plan: ok=%s msg=%s", ok, msg)
+    if not ok:
+        return {"ok": False, "msg": msg}
+    ok2, msg2 = facade.connect_cfdp(contact.peer_entity_num)
+    logger.info("connect_cfdp: ok=%s msg=%s", ok2, msg2)
+    return {"ok": ok2, "msg": msg2}
 # -- Controller --------------------------------------------------------------
 
 
@@ -129,6 +189,8 @@ class Controller:
         self._ion_parser.start()
 
         try:
+            global _current_node_id
+            _current_node_id = node_id
             self._node_id = node_id
             self._config = store.load_config(node_id)
 
@@ -145,6 +207,8 @@ class Controller:
                 container_port=container_port,
             )
             logger.info("Backend connect: ok=%s msg=%s", ok, msg)
+
+            self._ensure_initial_contact(node_id, self._config)
 
             # logger.info("Capturing ion.log")
             # backend.start_ion_logger(self._container_id)  # not yet implemented
@@ -179,6 +243,32 @@ class Controller:
             logger.error("Boot failed for node %s: %s", node_id, e)
             self.shutdown()
             return False
+
+    def _ensure_initial_contact(self, node_id: str, config) -> None:
+        """Add the boot-time receiver as the first contact if not already saved."""
+        fields = {f.name: f.value for f in config.rc_fields}
+        peer_address = str(fields.get("peer_address", "")).strip()
+        if not peer_address:
+            return
+        try:
+            host, port_str = peer_address.rsplit(":", 1)
+            port = int(port_str)
+        except ValueError:
+            return
+
+        existing = store.load_contacts(node_id)
+        if any(c.peer_entity_num == config.ion_entity_id for c in existing):
+            return  # already saved from a previous boot
+
+        contact = Contact(
+            id=uuid.uuid4().hex,
+            name=f"Receiver ({host})",
+            peer_entity_num=config.ion_entity_id,
+            peer_host=host,
+            peer_port=port,
+        )
+        store.create_contact(node_id, contact)
+        logger.info("Auto-created initial contact: %s (entity %s)", contact.name, contact.peer_entity_num)
 
     def spawn_peer(self) -> None:
         """Open a brand-new SpaceZilla process for a second node.

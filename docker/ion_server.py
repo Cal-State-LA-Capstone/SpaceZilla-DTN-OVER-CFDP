@@ -5,6 +5,8 @@ Wraps pyion operations as HTTP endpoints so the host PyIonAdapter
 can drive CFDP transfers without importing pyion on the host.
 """
 
+import re
+import subprocess
 import threading
 
 import uvicorn
@@ -130,6 +132,62 @@ async def suspend():
 @app.post("/resume")
 async def resume():
     return {"ok": False, "msg": "Resume not yet implemented."}
+
+
+def _parse_rc_sections(rc_text: str) -> dict[str, str]:
+    sections: dict[str, str] = {}
+    current: str | None = None
+    buf: list[str] = []
+    for line in rc_text.splitlines():
+        m = re.match(r"^##\s+begin\s+(\w+)", line)
+        if m:
+            current = m.group(1)
+            buf = []
+        elif re.match(r"^##\s+end\s+", line):
+            if current:
+                sections[current] = "\n".join(buf).strip()
+            current = None
+            buf = []
+        elif current is not None:
+            buf.append(line)
+    return sections
+
+
+@app.post("/apply_contact_plan")
+async def apply_contact_plan(body: dict):
+    rc_text = body.get("rc_text", "")
+    sections = _parse_rc_sections(rc_text)
+    for admin_cmd in ("ionadmin", "ltpadmin", "bpadmin", "ipnadmin", "cfdpadmin"):
+        content = sections.get(admin_cmd, "").strip()
+        if not content:
+            continue
+        try:
+            result = subprocess.run(
+                [admin_cmd],
+                input=content + "\n",
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+            if result.returncode != 0:
+                return {"ok": False, "msg": f"{admin_cmd} failed: {result.stderr.strip()}"}
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "msg": f"{admin_cmd} timed out after 20s"}
+        except Exception as e:
+            return {"ok": False, "msg": f"{admin_cmd} error: {e}"}
+    return {"ok": True, "msg": "Contact plan applied."}
+
+
+@app.post("/connect_cfdp")
+async def connect_cfdp(body: dict):
+    if state.cfdp_proxy is None or state.endpoint is None:
+        return {"ok": False, "msg": "Not connected to ION."}
+    try:
+        peer_entity_nbr = body["peer_entity_nbr"]
+        state.entity = state.cfdp_proxy.cfdp_open(peer_entity_nbr, state.endpoint)
+        return {"ok": True, "msg": f"CFDP opened to entity {peer_entity_nbr}."}
+    except Exception as e:
+        return {"ok": False, "msg": f"CFDP connect failed: {e}"}
 
 
 if __name__ == "__main__":

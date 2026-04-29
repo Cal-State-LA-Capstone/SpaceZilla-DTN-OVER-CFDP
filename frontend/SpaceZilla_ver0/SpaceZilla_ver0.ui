@@ -106,32 +106,10 @@
                </property>
               </widget>
              </item>
-             <item row="8" column="1">
-              <spacer name="horizontalSpacer">
-               <property name="orientation">
-                <enum>Qt::Orientation::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item row="8" column="2">
-              <widget class="QLineEdit" name="contact_filter">
-               <property name="layoutDirection">
-                <enum>Qt::LayoutDirection::LeftToRight</enum>
-               </property>
+             <item row="8" column="1" colspan="2">
+              <widget class="QPushButton" name="add_contact_btn">
                <property name="text">
-                <string/>
-               </property>
-               <property name="echoMode">
-                <enum>QLineEdit::EchoMode::Normal</enum>
-               </property>
-               <property name="placeholderText">
-                <string>Search Contact...</string>
+                <string>+ Add Contact</string>
                </property>
               </widget>
              </item>

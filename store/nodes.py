@@ -12,8 +12,8 @@ import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 
-from store.models import NodeConfig, NodeMeta, NodeState, RcFieldValue
-from store.paths import node_config_path, node_dir, node_meta_path, node_state_path
+from store.models import Contact, NodeConfig, NodeMeta, NodeState, RcFieldValue
+from store.paths import contacts_path, node_config_path, node_dir, node_meta_path, node_state_path
 from store.paths import nodes_dir as get_nodes_dir
 
 
@@ -121,3 +121,36 @@ def delete_node(node_id: str) -> bool:
         shutil.rmtree(ndir)
         return True
     return False
+
+
+def load_contacts(node_id: str) -> list[Contact]:
+    """Return all saved contacts for this node, or [] if none exist."""
+    path = contacts_path(node_id)
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text())
+    return [Contact(**c) for c in data]
+
+
+def save_contacts(node_id: str, contacts: list[Contact]) -> None:
+    """Overwrite contacts.json with the given list."""
+    path = contacts_path(node_id)
+    path.write_text(json.dumps([asdict(c) for c in contacts], indent=2) + "\n")
+
+
+def create_contact(node_id: str, contact: Contact) -> Contact:
+    """Append a contact and persist. Returns the contact."""
+    contacts = load_contacts(node_id)
+    contacts.append(contact)
+    save_contacts(node_id, contacts)
+    return contact
+
+
+def delete_contact(node_id: str, contact_id: str) -> bool:
+    """Remove a contact by id. Returns True if it was found."""
+    contacts = load_contacts(node_id)
+    new_list = [c for c in contacts if c.id != contact_id]
+    if len(new_list) == len(contacts):
+        return False
+    save_contacts(node_id, new_list)
+    return True

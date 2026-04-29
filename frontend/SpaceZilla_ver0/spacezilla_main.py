@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+from frontend.contact_button_mapping import ContactMapping
 from frontend.queue_button_mapping import QueueMapping
 from PySide6.QtCore import QDir, QFile, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPalette
@@ -133,6 +134,21 @@ class MainWindow:
 
         # QUEUE MAPPING — wires file_send button and status callbacks to IPC server
         self.queue_mapping = QueueMapping(ipc_port, self)
+
+        # CONTACT AREA SETUP
+        contact_scroll = self.window.findChild(QScrollArea, "CONTACT_LIST")
+        self.contact_container = QWidget()
+        self.contact_layout = QVBoxLayout(self.contact_container)
+        self.contact_layout.setAlignment(Qt.AlignTop)
+        self.contact_container.setLayout(self.contact_layout)
+        contact_scroll.setWidget(self.contact_container)
+
+        # Add contact button wired by ContactMapping
+        self.add_contact_btn = self.window.findChild(QPushButton, "add_contact_btn")
+        self.destination_display = self.window.findChild(QLineEdit, "destination_display")
+
+        # CONTACT MAPPING — wires contacts list to IPC server
+        self.contact_mapping = ContactMapping(ipc_port, self)
 
     def show(self):
         self.window.show()

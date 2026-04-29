@@ -83,6 +83,21 @@ class DockerStatus:
 
 
 @dataclass
+class Contact:
+    """A saved receiver that can be selected from the contacts list.
+
+    Stored as an entry in ``nodes/{node_id}/contacts.json``.
+    """
+
+    id: str
+    name: str
+    peer_entity_num: int
+    peer_host: str
+    peer_port: int = 1114
+    remote_dest_dir: str = "/tmp"
+
+
+@dataclass
 class GlobalSettings:
     """App-wide settings read once at boot from global/settings.json."""
 

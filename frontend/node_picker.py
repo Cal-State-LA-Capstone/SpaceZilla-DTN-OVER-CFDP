@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QFileDialog,
     QFormLayout,
     QLabel,
     QLineEdit,
@@ -164,24 +163,11 @@ def _show_receiver_config_dialog(node_id: str, parent=None) -> None:
     ip_combo.editTextChanged.connect(lambda _: _refresh())
 
     btn_row = QDialogButtonBox()
-    btn_save = QPushButton("Save to File")
     btn_copy = QPushButton("Copy to Clipboard")
     btn_close = QPushButton("Close")
-    btn_row.addButton(btn_save, QDialogButtonBox.ButtonRole.ActionRole)
     btn_row.addButton(btn_copy, QDialogButtonBox.ButtonRole.ActionRole)
     btn_row.addButton(btn_close, QDialogButtonBox.ButtonRole.RejectRole)
     layout.addWidget(btn_row)
-
-    def _save():
-        if not ip_combo.currentText().strip():
-            QMessageBox.warning(dialog, "Missing IP", "Enter the sender's LAN IP before saving.")
-            return
-        path, _ = QFileDialog.getSaveFileName(
-            dialog, "Save Receiver Config", "receiver.rc", "RC files (*.rc);;All files (*)"
-        )
-        if path:
-            with open(path, "w") as f:
-                f.write(preview.toPlainText())
 
     def _copy():
         if not ip_combo.currentText().strip():
@@ -189,7 +175,6 @@ def _show_receiver_config_dialog(node_id: str, parent=None) -> None:
             return
         QApplication.clipboard().setText(preview.toPlainText())
 
-    btn_save.clicked.connect(_save)
     btn_copy.clicked.connect(_copy)
     btn_close.clicked.connect(dialog.reject)
 
@@ -255,6 +240,8 @@ def open_node_picker(
             if success:
                 dialog.accept()
             else:
+                dialog.btnBootNode.setEnabled(docker_status.available)
+                dialog.btnCreateNode.setEnabled(True)
                 if cleanup_node_id:
                     store.delete_node(cleanup_node_id)
                 QMessageBox.warning(
@@ -325,6 +312,8 @@ def open_node_picker(
     def _on_boot_clicked():
         row = dialog.listNodes.currentRow()
         if 0 <= row < len(node_ids):
+            dialog.btnBootNode.setEnabled(False)
+            dialog.btnCreateNode.setEnabled(False)
             _start_boot(node_ids[row], on_select)
 
     def _on_create_clicked():
@@ -333,6 +322,8 @@ def open_node_picker(
             return  # user cancelled the form
         name, rc_values = result
         node_id = store.create_node(name=name, rc_fields=rc_values)
+        dialog.btnBootNode.setEnabled(False)
+        dialog.btnCreateNode.setEnabled(False)
         _start_boot(node_id, on_create, cleanup_node_id=node_id)
 
     def _on_receiver_config_clicked():
