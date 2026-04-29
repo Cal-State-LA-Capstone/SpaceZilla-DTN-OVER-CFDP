@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+from pathlib import Path
 from PySide6.QtCore import QDir, QFile, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPalette
 from PySide6.QtUiTools import QUiLoader
@@ -21,11 +22,13 @@ from PySide6.QtWidgets import (
 )
 
 loader = QUiLoader()
-
+BASE_DIR = Path(__file__).resolve().parent
+ICON_PATH = str(BASE_DIR / "icons" / "SpaceZillaLogo.png")
 
 # Helper function to load UI
 def load_ui(ui_file):
-    file = QFile(ui_file)
+    file_path = BASE_DIR / ui_file
+    file = QFile(str(file_path))
     file.open(QFile.ReadOnly)
     window = loader.load(file)
     file.close()
@@ -35,6 +38,7 @@ def load_ui(ui_file):
 class MainWindow:
     def __init__(self):
         self.window = load_ui("SpaceZilla_ver0.ui")
+        self.window.setWindowIcon(QIcon(ICON_PATH))
         self.window.setWindowTitle("SpaceZilla")
 
         print("SETTING UP FILE EXPLORER")
@@ -295,6 +299,13 @@ class MainWindow:
 
 if __name__ == "__main__":
     app = QApplication([])
+    app.setApplicationName("SpaceZilla")
+    app.setApplicationDisplayName("SpaceZilla")
+    app.setDesktopFileName("SpaceZilla")
+
+    icon = QIcon(ICON_PATH)
+    app.setWindowIcon(icon)
+
     main = MainWindow()
     main.show()
     app.exec()

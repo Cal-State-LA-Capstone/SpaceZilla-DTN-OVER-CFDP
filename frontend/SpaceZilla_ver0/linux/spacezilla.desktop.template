@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SpaceZilla
+Comment=SpaceZilla CFDP over DTN frontend
+Exec=__RUN_SCRIPT_PATH__
+Icon=__ICON_PATH__
+Terminal=false
+Categories=Utility;Development;
+StartupNotify=true
+StartupWMClass=spacezilla
